@@ -219,6 +219,15 @@ export const increaseTime = async (seconds: number) => {
   await ethers.provider.send("evm_mine", []);
 };
 
+let snapshotId: string = "0x1";
+export async function takeSnapshot() {
+  snapshotId = await ethers.provider.send("evm_snapshot", []);
+}
+
+export async function revertToSnapshot() {
+  await ethers.provider.send("evm_revert", [snapshotId]);
+}
+
 export async function dumpTask(ctx: any, from: any, to: any) {
   console.log("================task[" + from + ", " + to + "]================");
   let task;
