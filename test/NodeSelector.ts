@@ -6,6 +6,7 @@ import {
   prepareContext,
   nodes,
   nodeAddresses,
+  increaseTime,
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
 
@@ -43,9 +44,13 @@ describe("NodeSelector", function () {
 
     console.log(nodeAddresses);
 
-    result = await nodeSelectorForTest.selectNodes(nodeStorage.address, 3);
-    assert.lengthOf(result[0], 3);
-    assert.equal(result[1], true);
-    console.log(result[0]);
+    const oneMinute = 60;
+    for (let i = 1; i <= 5; i++) {
+      await increaseTime(oneMinute * i);
+      result = await nodeSelectorForTest.selectNodes(nodeStorage.address, 3);
+      assert.lengthOf(result[0], 3);
+      assert.equal(result[1], true);
+      console.log(result[0]);
+    }
   });
 });

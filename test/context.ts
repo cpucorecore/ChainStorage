@@ -200,6 +200,11 @@ export async function prepareContext(
   }
 }
 
+export const increaseTime = async (seconds: number) => {
+  await ethers.provider.send("evm_increaseTime", [seconds]);
+  await ethers.provider.send("evm_mine", []);
+};
+
 export async function dumpTask(ctx: any, from: any, to: any) {
   console.log("================task[" + from + ", " + to + "]================");
   let task;
