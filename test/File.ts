@@ -10,7 +10,7 @@ import {
   nodes,
   users,
   takeSnapshot,
-  revertToSnapshot,
+  revertToSnapshot, userAddresses
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
 
@@ -56,5 +56,36 @@ describe("File", function () {
   it("owners", async function () {
     await chainStorage.connect(users[0]).userAddFile(Cid, Duration, FileExt);
     expect(await fileStorage.exist(Cid)).to.equal(true);
+    expect(await fileStorage.userExist(Cid, userAddresses[0])).to.equal(true);
+    expect(await fileStorage.userExist(Cid, userAddresses[1])).to.equal(false);
+
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
+    await chainStorage.connect(nodes[0]).nodeFinishTask(1, FileSize);
+    await chainStorage.connect(users[1]).userAddFile(Cid, Duration, FileExt);
+    expect(await fileStorage.userExist(Cid, userAddresses[0])).to.equal(true);
+    expect(await fileStorage.userExist(Cid, userAddresses[1])).to.equal(true);
+
+    await chainStorage.connect(users[0]).userDeleteFile(Cid);
+    expect(await fileStorage.userExist(Cid, userAddresses[0])).to.equal(false);
+    expect(await fileStorage.userExist(Cid, userAddresses[1])).to.equal(true);
+
+    await chainStorage.connect(users[1]).userDeleteFile(Cid);
+    expect(await fileStorage.userExist(Cid, userAddresses[0])).to.equal(false);
+    expect(await fileStorage.userExist(Cid, userAddresses[1])).to.equal(false);
+
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(3);
+    await chainStorage.connect(nodes[0]).nodeFinishTask(3, FileSize);
+    expect(await fileStorage.userExist(Cid, userAddresses[0])).to.equal(false);
+    expect(await fileStorage.userExist(Cid, userAddresses[1])).to.equal(false);
+
+    await chainStorage.connect(nodes[1]).nodeAcceptTask(2);
+    await chainStorage.connect(nodes[1]).nodeFinishTask(2, FileSize);
+    expect(await fileStorage.userExist(Cid, userAddresses[0])).to.equal(false);
+    expect(await fileStorage.userExist(Cid, userAddresses[1])).to.equal(false);
+
+    await chainStorage.connect(nodes[1]).nodeAcceptTask(4);
+    await chainStorage.connect(nodes[1]).nodeFinishTask(4, FileSize);
+    expect(await fileStorage.userExist(Cid, userAddresses[0])).to.equal(false);
+    expect(await fileStorage.userExist(Cid, userAddresses[1])).to.equal(false);
   });
 });
