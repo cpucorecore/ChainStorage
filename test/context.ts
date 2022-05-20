@@ -3,7 +3,16 @@ import { Signer } from "ethers";
 // const Web3Utils = require("web3-utils");
 import { fromAscii, padRight } from "web3-utils";
 // eslint-disable-next-line node/no-missing-import
-import { ChainStorage, NodeSelectorForTest, NodeStorage } from "../typechain";
+import {
+  ChainStorage,
+  FileStorage,
+  MonitorStorage,
+  NodeSelectorForTest,
+  NodeStorage,
+  TaskStorage,
+  UserStorage,
+  // eslint-disable-next-line node/no-missing-import
+} from "../typechain";
 
 export const NodeStorageTotal = 1024 * 1024 * 1024 * 100;
 export const UserStorageTotal = 1024 * 1024 * 1024 * 5;
@@ -13,6 +22,7 @@ export const Duration = 3600;
 export const NodeExt = "nodeExt";
 export const UserExt = "userExt";
 export const MonitorExt = "monitorExt";
+export const FileExt = "fileExt";
 export const FileSize = 1111;
 export const Cid = "QmeN6JUjRSZJgdQFjFMX9PHwAFueWbRecLKBZgcqYLboir";
 
@@ -27,6 +37,10 @@ export let nodeSelectorForTest: NodeSelectorForTest;
 
 export let chainStorage: ChainStorage;
 export let nodeStorage: NodeStorage;
+export let fileStorage: FileStorage;
+export let monitorStorage: MonitorStorage;
+export let userStorage: UserStorage;
+export let taskStorage: TaskStorage;
 export const users: Signer[] = [];
 export const nodes: Signer[] = [];
 export const monitors: Signer[] = [];
@@ -68,7 +82,7 @@ export async function prepareContext(
   await file.deployed();
   // deploy FileStorage
   const FileStorage = await ethers.getContractFactory("FileStorage");
-  const fileStorage = await FileStorage.deploy(file.address);
+  fileStorage = await FileStorage.deploy(file.address);
   await fileStorage.deployed();
   // file setStorage
   await file.setStorage(fileStorage.address);
@@ -78,7 +92,7 @@ export async function prepareContext(
   await monitor.deployed();
   // deploy MonitorStorage
   const MonitorStorage = await ethers.getContractFactory("MonitorStorage");
-  const monitorStorage = await MonitorStorage.deploy(monitor.address);
+  monitorStorage = await MonitorStorage.deploy(monitor.address);
   await monitorStorage.deployed();
   // monitor setStorage
   await monitor.setStorage(monitorStorage.address);
@@ -88,7 +102,7 @@ export async function prepareContext(
   await user.deployed();
   // deploy UserStorage
   const UserStorage = await ethers.getContractFactory("UserStorage");
-  const userStorage = await UserStorage.deploy(user.address);
+  userStorage = await UserStorage.deploy(user.address);
   await userStorage.deployed();
   // user setStorage
   await user.setStorage(userStorage.address);
@@ -108,7 +122,7 @@ export async function prepareContext(
   await task.deployed();
   // deploy TaskStorage
   const TaskStorage = await ethers.getContractFactory("TaskStorage");
-  const taskStorage = await TaskStorage.deploy(task.address);
+  taskStorage = await TaskStorage.deploy(task.address);
   await taskStorage.deployed();
   // task setStorage
   await task.setStorage(taskStorage.address);
