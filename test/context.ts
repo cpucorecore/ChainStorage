@@ -228,41 +228,45 @@ export async function revertToSnapshot() {
   await ethers.provider.send("evm_revert", [snapshotId]);
 }
 
-export async function dumpTask(ctx: any, from: any, to: any) {
+export async function dumpTask(from: any, to: any) {
   console.log("================task[" + from + ", " + to + "]================");
+
+  console.log("\tuser, action, node, noCallback, cid");
+
   let task;
   for (let i = from; i <= to; i++) {
-    task = await ctx.taskStorage.getTask(i);
+    task = await taskStorage.getTask(i);
     console.log(
       "task[" +
         i +
-        "]:" +
+        "]:(" +
         task[0] +
-        "," +
+        ", " +
         task[1] +
-        "," +
+        ", " +
         task[2] +
-        "," +
+        ", " +
         task[3] +
-        "," +
-        task[4]
+        ", " +
+        task[4] +
+        ")"
     );
   }
   console.log("\n");
 }
 
-export async function dumpTaskState(ctx: any, from: any, to: any) {
+export async function dumpTaskState(from: any, to: any) {
   console.log(
     "================taskState[" + from + ", " + to + "]================"
   );
 
   console.log(
-    "status, createBlockNumber, createTime, acceptTime, acceptTimeoutTime, finishTime, failTime, timeoutTime"
+    "\tstatus, createBlockNumber, createTime, acceptTime, acceptTimeoutTime, finishTime, failTime, timeoutTime"
   );
 
   let taskState;
   for (let i = from; i <= to; i++) {
-    taskState = await ctx.taskStorage.getTaskState(i);
+    taskState = await taskStorage.getTaskState(i);
     console.log(
       "taskState[" +
         i +
