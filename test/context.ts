@@ -31,7 +31,8 @@ export const AddFileTaskTimeout = 3600 * 24;
 export const DeleteFileTaskTimeout = 60 * 10;
 export const AddFileProgressTimeout = 60 * 10;
 
-export let accounts: Signer[];
+export let accounts: Signer[] = [];
+export const accountAddresses: string[] = [];
 
 export let nodeSelectorForTest: NodeSelectorForTest;
 
@@ -62,6 +63,9 @@ export async function prepareContext(
 ) {
   Replica = replica;
   accounts = await ethers.getSigners();
+  for (const signer of accounts) {
+    accountAddresses.push(await signer.getAddress());
+  }
   // deploy Resolver
   const Resolver = await ethers.getContractFactory("Resolver");
   const resolver = await Resolver.deploy();
