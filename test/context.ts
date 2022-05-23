@@ -25,14 +25,18 @@ export const MonitorExt = "monitorExt";
 export const FileExt = "fileExt";
 export const FileSize = 1111;
 export const Cid = "QmeN6JUjRSZJgdQFjFMX9PHwAFueWbRecLKBZgcqYLboir";
+export const Cids = [
+  "QmWAJk3wmp8jqTWp2dQ3NRdoBjnmvupdL2GiBqt69FFk2H", // hash: 0xdda4e1efafe56f53f4025cd0708f6bdff673e1aa3995eea9f023c6eec2a7eb4a
+  "QmUgU1m8wtsiyfXnKJn6yMP66zph5X716GZqjqYrZWsLjf", // hash: 0xf8af37dd2f20cebb5f9720a4c63a7ceaa036a5042a30b87a19832e0fa530c84c
+  "QmRnCyTbu47hdg173ja4j8xUoEZ5MjRHT6yqDMSqtqXHhF", // hash: 0xd4a832f0884972948d6eee2c2daa0e91def2d4bd5f4f899c9eda1d78a28a9b44
+  "QmbZU93HjXLn5wseFjCLyw1tM5BDoitSiZfR5o3Jo6C6tN", // hash: 0x68fc51c0de0c0e6be1067b90862da21f2e796b933851e5aaecf9d1d6f6ff332b
+  "QmeN6JUjRSZJgdQFjFMX9PHwAFueWbRecLKBZgcqYLboir", // hash: 0x5ef8d464eb9a1baaf9c52ccfef2262fda94bd65cc559526f90e9ea37e73b2068
+];
 
 export const TaskAcceptTimeout = 3600;
 export const AddFileTaskTimeout = 3600 * 24;
 export const DeleteFileTaskTimeout = 60 * 10;
 export const AddFileProgressTimeout = 60 * 10;
-
-export let accounts: Signer[] = [];
-export const accountAddresses: string[] = [];
 
 export let nodeSelectorForTest: NodeSelectorForTest;
 
@@ -42,12 +46,18 @@ export let fileStorage: FileStorage;
 export let monitorStorage: MonitorStorage;
 export let userStorage: UserStorage;
 export let taskStorage: TaskStorage;
+
 export const users: Signer[] = [];
 export const nodes: Signer[] = [];
 export const monitors: Signer[] = [];
+
 export const userAddresses: string[] = [];
 export const nodeAddresses: string[] = [];
 export const monitorAddresses: string[] = [];
+export let accounts: Signer[] = [];
+export const accountAddresses: string[] = [];
+export let deployer: Signer;
+export let deployerAddress: string;
 
 function string2bytes32(value: string) {
   return padRight(fromAscii(value), 64);
@@ -143,7 +153,8 @@ export async function prepareContext(
   nodeSelectorForTest = await NodeSelectorForTest.deploy();
   await nodeSelectorForTest.deployed();
   // resolver set addresses
-  const deployerAddress = await accounts[0].getAddress();
+  deployer = accounts[0];
+  deployerAddress = await deployer.getAddress();
   await resolver.setAddress(string2bytes32("Admin"), deployerAddress);
   await resolver.setAddress(string2bytes32("Setting"), setting.address);
   await resolver.setAddress(string2bytes32("File"), file.address);
