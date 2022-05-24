@@ -4,6 +4,7 @@ import { Signer } from "ethers";
 import { fromAscii, padRight } from "web3-utils";
 // eslint-disable-next-line node/no-missing-import
 import {
+  Setting,
   ChainStorage,
   FileStorage,
   MonitorStorage,
@@ -39,9 +40,11 @@ export const TaskAcceptTimeout = 3600;
 export const AddFileTaskTimeout = 3600 * 24;
 export const DeleteFileTaskTimeout = 60 * 10;
 export const AddFileProgressTimeout = 60 * 10;
+export const MaxAddFileFailedCount = 3;
 
 export let nodeSelectorForTest: NodeSelectorForTest;
 
+export let setting: Setting;
 export let chainStorage: ChainStorage;
 export let nodeStorage: NodeStorage;
 export let fileStorage: FileStorage;
@@ -86,7 +89,7 @@ export async function prepareContext(
   await resolver.deployed();
   // deploy Setting
   const Setting = await ethers.getContractFactory("Setting");
-  const setting = await Setting.deploy();
+  setting = await Setting.deploy();
   await setting.deployed();
   // deploy SettingStorage
   const SettingStorage = await ethers.getContractFactory("SettingStorage");
@@ -191,6 +194,7 @@ export async function prepareContext(
   await setting.setAddFileTaskTimeout(AddFileTaskTimeout);
   await setting.setDeleteFileTaskTimeout(DeleteFileTaskTimeout);
   await setting.setAddFileProgressTimeout(AddFileProgressTimeout);
+  await setting.setMaxAddFileFailedCount(MaxAddFileFailedCount);
 
   let address;
   // create users

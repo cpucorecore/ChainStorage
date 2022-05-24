@@ -8,7 +8,7 @@ interface ISetting {
     function setInitSpace(uint256 space) external;
 
     function getAdmin() external view returns (address);
-    function setAdmin(address addr) external;
+    function setAdmin(address adminAddress) external;
 
     function getMaxUserExtLength() external view returns (uint256);
     function setMaxUserExtLength(uint256 length) external;

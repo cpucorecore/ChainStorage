@@ -51,11 +51,11 @@ contract Setting is ExternalStorable, ISetting {
         return _Storage().getAddress(ADMIN_ACCOUNT);
     }
 
-    function setAdmin(address addr) external {
-        require(addr != address(0), "S:can not set address(0) as admin");
+    function setAdmin(address adminAddress) external {
+        require(adminAddress != address(0), "S:can not set address(0) as admin");
         address oldAdmin = getAdmin();
         require(oldAdmin == address(0) || msg.sender == oldAdmin || msg.sender == owner, "S:no auth");
-        _Storage().setAddress(ADMIN_ACCOUNT, addr);
+        _Storage().setAddress(ADMIN_ACCOUNT, adminAddress);
     }
 
     function getMaxUserExtLength() external view returns (uint256) {
