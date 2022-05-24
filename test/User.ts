@@ -1,22 +1,19 @@
-import { assert, expect, use } from "chai";
+import { expect } from "chai";
 import {
-  Cid,
   Cids,
   Duration,
   FileExt,
-  FileSize,
   chainStorage,
-  fileStorage,
   prepareContext,
   nodes,
-  users,
   takeSnapshot,
   revertToSnapshot,
-  userAddresses,
-  taskStorage,
-  nodeAddresses,
-  dumpTask,
-  dumpTaskState, userStorage, accountAddresses, accounts, UserExt, UserStorageTotal, deployerAddress, deployer
+  userStorage,
+  accountAddresses,
+  accounts,
+  UserExt,
+  UserStorageTotal,
+  deployer,
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
 import { Signer } from "ethers";
@@ -24,7 +21,7 @@ import { Signer } from "ethers";
 describe("User", function () {
   let user: Signer;
   let userAddress: string;
-  
+
   before(async () => {
     await prepareContext(0, 2, 2, 0, 0, 2);
     user = accounts[10];
@@ -142,5 +139,53 @@ describe("User", function () {
     const userAddress = accountAddresses[0];
 
     expect(await userStorage.getStorageTotal(userAddress)).to.equal(0);
+
+    await chainStorage.connect(user).userRegister(UserExt);
+    expect(await userStorage.getStorageUsed(userAddress)).to.equal(0);
+    expect(await userStorage.getStorageTotal(userAddress)).to.equal(
+      UserStorageTotal
+    );
+
+    await chainStorage.connect(user).userAddFile(cid1, Duration, FileExt);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
+    await chainStorage.connect(nodes[1]).nodeAcceptTask(2);
+    await chainStorage.connect(nodes[0]).nodeFinishTask(1, cid1size);
+    await chainStorage.connect(nodes[1]).nodeFinishTask(2, cid1size);
+    expect(await userStorage.getStorageUsed(userAddress)).to.equal(cid1size);
+    expect(await userStorage.getStorageTotal(userAddress)).to.equal(
+      UserStorageTotal
+    );
+
+    await chainStorage.connect(user).userAddFile(cid2, Duration, FileExt);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(3);
+    await chainStorage.connect(nodes[1]).nodeAcceptTask(4);
+    await chainStorage.connect(nodes[0]).nodeFinishTask(3, cid2size);
+    await chainStorage.connect(nodes[1]).nodeFinishTask(4, cid2size);
+    expect(await userStorage.getStorageUsed(userAddress)).to.equal(
+      cid1size + cid2size
+    );
+    expect(await userStorage.getStorageTotal(userAddress)).to.equal(
+      UserStorageTotal
+    );
+
+    await chainStorage.connect(user).userDeleteFile(cid1);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(5);
+    await chainStorage.connect(nodes[1]).nodeAcceptTask(6);
+    await chainStorage.connect(nodes[0]).nodeFinishTask(5, cid1size);
+    await chainStorage.connect(nodes[1]).nodeFinishTask(6, cid1size);
+    expect(await userStorage.getStorageUsed(userAddress)).to.equal(cid2size);
+    expect(await userStorage.getStorageTotal(userAddress)).to.equal(
+      UserStorageTotal
+    );
+
+    await chainStorage.connect(user).userDeleteFile(cid2);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(7);
+    await chainStorage.connect(nodes[1]).nodeAcceptTask(8);
+    await chainStorage.connect(nodes[0]).nodeFinishTask(7, cid1size);
+    await chainStorage.connect(nodes[1]).nodeFinishTask(8, cid1size);
+    expect(await userStorage.getStorageUsed(userAddress)).to.equal(0);
+    expect(await userStorage.getStorageTotal(userAddress)).to.equal(
+      UserStorageTotal
+    );
   });
 });
