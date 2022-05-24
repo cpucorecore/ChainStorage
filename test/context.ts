@@ -9,6 +9,7 @@ import {
   MonitorStorage,
   NodeSelectorForTest,
   NodeStorage,
+  Task,
   TaskStorage,
   User,
   UserStorage,
@@ -47,6 +48,7 @@ export let fileStorage: FileStorage;
 export let monitorStorage: MonitorStorage;
 export let user: User;
 export let userStorage: UserStorage;
+export let task: Task;
 export let taskStorage: TaskStorage;
 
 export const users: Signer[] = [];
@@ -134,7 +136,7 @@ export async function prepareContext(
   await node.setStorage(nodeStorage.address);
   // deploy Task
   const Task = await ethers.getContractFactory("Task");
-  const task = await Task.deploy(resolver.address);
+  task = await Task.deploy(resolver.address);
   await task.deployed();
   // deploy TaskStorage
   const TaskStorage = await ethers.getContractFactory("TaskStorage");
