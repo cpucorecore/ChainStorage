@@ -165,6 +165,12 @@ contract ChainStorage is Proxyable, Pausable, Importable {
         _Monitor().deRegister(msg.sender);
     }
 
+    function monitorSetExt(string calldata ext) external {
+        _mustOnline();
+        require(bytes(ext).length <= _Setting().getMaxMonitorExtLength(), "CS:monitor ext too long");
+        _Monitor().setExt(msg.sender, ext);
+    }
+
     function monitorOnline() external {
         _mustOnline();
         _Monitor().online(msg.sender);

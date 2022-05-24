@@ -8,6 +8,7 @@ import "./interfaces/ITask.sol";
 import "./interfaces/INode.sol";
 import "./interfaces/ISetting.sol";
 import "./lib/SafeMath.sol";
+import "hardhat/console.sol";
 
 contract Monitor is Importable, ExternalStorable, IMonitor {
     using SafeMath for uint256;
@@ -47,10 +48,18 @@ contract Monitor is Importable, ExternalStorable, IMonitor {
         _Storage().newMonitor(monitorAddress, ext);
     }
 
+    function setExt(address monitorAddress, string calldata ext) external {
+        mustAddress(CONTRACT_CHAIN_STORAGE);
+        require(_Storage().exist(monitorAddress), "M:monitor not exist");
+        _Storage().setExt(monitorAddress, ext);
+    }
+
     function deRegister(address monitorAddress) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
         require(_Storage().exist(monitorAddress), "M:monitor not exist");
-        require(MonitorMaintain == _Storage().getStatus(monitorAddress), "M:status must be maintain");
+        uint256 status = _Storage().getStatus(monitorAddress);
+        require(MonitorRegistered == status || MonitorMaintain == status, "M:wrong status must[RM]");
+
         _Storage().deleteMonitor(monitorAddress);
     }
 
@@ -157,7 +166,6 @@ contract Monitor is Importable, ExternalStorable, IMonitor {
 
         if(Add == action) {
             uint256 addFileTimeout = _Setting().getAddFileTaskTimeout();
-
             if(now > acceptTime.add(addFileTimeout)) {
                 return true;
             }

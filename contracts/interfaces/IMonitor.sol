@@ -3,6 +3,7 @@ pragma experimental ABIEncoderV2;
 
 interface IMonitor {
     function register(address monitorAddress, string calldata ext) external;
+    function setExt(address monitorAddress, string calldata ext) external;
     function deRegister(address monitorAddress) external;
 
     function online(address monitorAddress) external;

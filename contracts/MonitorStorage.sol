@@ -39,6 +39,14 @@ contract MonitorStorage is ExternalStorage, IMonitorStorage {
         return (monitor.status, monitor.firstOnlineTid, monitor.currentTid, monitor.ext);
     }
 
+    function getExt(address monitorAddress) external view returns (string memory) {
+        return monitors[monitorAddress].ext;
+    }
+
+    function setExt(address monitorAddress, string calldata ext) external {
+        monitors[monitorAddress].ext = ext;
+    }
+
     function getCurrentTid(address monitorAddress) external view returns (uint256) {
         return monitors[monitorAddress].currentTid;
     }
