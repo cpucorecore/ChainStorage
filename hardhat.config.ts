@@ -39,12 +39,13 @@ const config: HardhatUserConfig = {
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
+
+  // https://github.com/ItsNickBarry/hardhat-contract-sizer
   contractSizer: {
     alphaSort: true,
     disambiguatePaths: false,
-    runOnCompile: true,
+    runOnCompile: false,
     strict: true,
-    // only: [':ERC20$'],
   },
 };
 

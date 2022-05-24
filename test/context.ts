@@ -10,6 +10,7 @@ import {
   NodeSelectorForTest,
   NodeStorage,
   TaskStorage,
+  User,
   UserStorage,
   // eslint-disable-next-line node/no-missing-import
 } from "../typechain";
@@ -44,6 +45,7 @@ export let chainStorage: ChainStorage;
 export let nodeStorage: NodeStorage;
 export let fileStorage: FileStorage;
 export let monitorStorage: MonitorStorage;
+export let user: User;
 export let userStorage: UserStorage;
 export let taskStorage: TaskStorage;
 
@@ -112,7 +114,7 @@ export async function prepareContext(
   await monitor.setStorage(monitorStorage.address);
   // deploy User
   const User = await ethers.getContractFactory("User");
-  const user = await User.deploy(resolver.address);
+  user = await User.deploy(resolver.address);
   await user.deployed();
   // deploy UserStorage
   const UserStorage = await ethers.getContractFactory("UserStorage");
