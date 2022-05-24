@@ -120,6 +120,7 @@ contract Task is Importable, ExternalStorable, ITask {
 
         (,,address taskNodeAddress,,) = _Storage().getTask(tid);
         require(nodeAddress == taskNodeAddress, "T:node have no this task");
+        require(percentage <= 100, "T:percentage must <=100");
 
         (uint256 status,,,,,,,) = _Storage().getTaskState(tid);
         require(TaskAccepted == status, "T:wrong task status,must TaskAccepted");

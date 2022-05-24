@@ -8,7 +8,6 @@ import "./interfaces/ITask.sol";
 import "./interfaces/INode.sol";
 import "./interfaces/ISetting.sol";
 import "./lib/SafeMath.sol";
-import "hardhat/console.sol";
 
 contract Monitor is Importable, ExternalStorable, IMonitor {
     using SafeMath for uint256;
@@ -171,14 +170,27 @@ contract Monitor is Importable, ExternalStorable, IMonitor {
             }
 
             uint256 addFileProgressTimeout = _Setting().getAddFileProgressTimeout();
-            (uint256 progressTime, uint256 progressLastSize, uint256 progressCurrentSize,,,) = _Task().getAddFileTaskProgress(tid);
-            if(now > progressTime.add(addFileProgressTimeout)) {
-                return true;
+            (
+                uint256 progressTime,
+                uint256 progressLastSize,
+                uint256 progressCurrentSize,
+                uint256 fileSize,
+                uint256 lastPercentage,
+                uint256 currentPercentage
+            ) = _Task().getAddFileTaskProgress(tid);
+            if(0 == progressTime) {
+                if(now > acceptTime.add(addFileProgressTimeout)) {
+                    return true;
+                }
+            } else {
+                if(now > progressTime.add(addFileProgressTimeout)) {
+                    return true;
+                }
             }
-
-            if(progressLastSize == progressCurrentSize) {
-                return true;
-            }
+            // TODO check: not check size for now: 20220524
+//            if((progressLastSize == progressCurrentSize && progressCurrentSize < fileSize) || lastPercentage == currentPercentage) {
+//                return true;
+//            }
         } else {
             uint256 deleteFileTimeout = _Setting().getDeleteFileTaskTimeout();
             if(now > acceptTime.add(deleteFileTimeout)) {

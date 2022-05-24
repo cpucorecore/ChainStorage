@@ -1,7 +1,6 @@
 import { expect } from "chai";
 import {
   Cid,
-  Cids,
   Duration,
   FileExt,
   chainStorage,
@@ -9,24 +8,19 @@ import {
   nodes,
   takeSnapshot,
   revertToSnapshot,
-  userStorage,
   accountAddresses,
   accounts,
   users,
-  UserExt,
-  UserStorageTotal,
-  deployer,
   monitorStorage,
   MonitorExt,
-  FileSize,
   increaseTime,
-  MaxLength,
   TaskAcceptTimeout,
   AddFileTaskTimeout,
-  monitors
+  monitors,
+  AddFileProgressTimeout,
+  FileSize,
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
-import { Signer } from "ethers";
 
 describe("Monitor", function () {
   before(async () => {
@@ -86,7 +80,20 @@ export const AddFileProgressTimeout = 60 * 10;
     ).to.revertedWith("M:task not acceptTimeout");
   });
 
-  it.skip("monitor should reportTaskAcceptTimeout", async function () {
+  it("monitor should fail to reportTaskAcceptTimeout for node report first", async function () {
+    const user = users[0];
+    const node1 = nodes[0];
+    const monitor = monitors[0];
+
+    await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
+    await increaseTime(TaskAcceptTimeout);
+    await chainStorage.connect(node1).nodeAcceptTask(1);
+    await expect(
+      chainStorage.connect(monitor).monitorReportTaskAcceptTimeout(1)
+    ).to.revertedWith("M:task not acceptTimeout");
+  });
+
+  it("monitor should reportTaskAcceptTimeout", async function () {
     const user = users[0];
     const monitor = monitors[0];
 
@@ -109,18 +116,16 @@ export const AddFileProgressTimeout = 60 * 10;
     ).to.revertedWith("M:task not acceptTimeout");
   });
 
-  it.skip("monitor should fail reportTaskTimeout for timeout not reached", async function () {
+  it("monitor should fail reportTaskTimeout for timeout not reached", async function () {
     const user = users[0];
     const node1 = nodes[0];
     const monitor = monitors[0];
 
     await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
     await chainStorage.connect(node1).nodeAcceptTask(1);
-    // await increaseTime(AddFileTaskTimeout - 1000);
-    await chainStorage.connect(monitor).monitorReportTaskTimeout(1);
-    // await expect(
-    //   chainStorage.connect(monitor).monitorReportTaskTimeout(1)
-    // ).to.revertedWith("xx");
+    await expect(
+      chainStorage.connect(monitor).monitorReportTaskTimeout(1)
+    ).to.revertedWith("M:task not timeout");
   });
 
   it("monitor should reportTaskTimeout", async function () {
@@ -134,18 +139,22 @@ export const AddFileProgressTimeout = 60 * 10;
     await chainStorage.connect(monitor).monitorReportTaskTimeout(1);
   });
 
-  // it("report taskTimeout", async function () {
-  //   const user = users[0];
-  //   const node1 = nodes[0];
-  //
-  //   await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
-  //   await chainStorage.connect(node1).nodeAcceptTask(1);
-  //
-  //   await expect(
-  //     chainStorage.monitorReportTaskAcceptTimeout(1)
-  //   ).to.revertedWith("M:task not acceptTimeout");
-  //
-  //   await increaseTime(TaskAcceptTimeout);
-  //   await chainStorage.monitorReportTaskAcceptTimeout(1);
-  // });
+  it("monitor should fail to reportTaskTimeout for the node report task first", async function () {
+    const user = users[0];
+    const node1 = nodes[0];
+    const monitor = monitors[1];
+
+    await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
+    await chainStorage.connect(node1).nodeAcceptTask(1);
+
+    await increaseTime(AddFileProgressTimeout);
+    await chainStorage
+      .connect(node1)
+      .nodeReportAddFileProgressBySize(1, Math.ceil(FileSize / 10));
+    await expect(
+      chainStorage.connect(monitor).monitorReportTaskTimeout(1)
+    ).to.revertedWith("M:task not timeout");
+
+    await increaseTime(TaskAcceptTimeout);
+  });
 });
