@@ -9,4 +9,5 @@ test: $(wildcard test/*) $(wildcard contracts/**/*)
 	npx hardhat test test/UserAction.ts
 	npx hardhat test test/Monitor.ts
 	npx hardhat test test/Event.ts
+	npx hardhat test test/Setting.ts
 
