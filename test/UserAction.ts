@@ -17,13 +17,41 @@ import {
   dumpTaskState,
   fileStorage,
   userAddresses,
-  nodeStorage,
+  nodeStorage, Cid, dumpFile
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
+import { Signer } from "ethers";
 
 describe("User", function () {
+  let user1: Signer;
+  let user2: Signer;
+  let user1Address: string;
+  let user2Address: string;
+  let node1: Signer;
+  let node2: Signer;
+  let node3: Signer;
+  let node4: Signer;
+  let node1Address: string;
+  let node2Address: string;
+  let node3Address: string;
+  let node4Address: string;
+  let cid: string;
+
   before(async () => {
     await prepareContext(2, 4, 4, 0, 0, 4);
+    user1 = users[0];
+    user2 = users[1];
+    user1Address = userAddresses[0];
+    user2Address = userAddresses[1];
+    node1 = nodes[0];
+    node2 = nodes[1];
+    node3 = nodes[2];
+    node4 = nodes[3];
+    node1Address = nodeAddresses[0];
+    node2Address = nodeAddresses[1];
+    node3Address = nodeAddresses[2];
+    node4Address = nodeAddresses[3];
+    cid = Cids[0];
   });
 
   beforeEach(async function () {
@@ -34,7 +62,7 @@ describe("User", function () {
     await revertToSnapshot();
   });
 
-  it("user random operation", async function () {
+  it.skip("user random operation", async function () {
     /* random operations:
     user1.addFile(cid)-->
     node1.finishAddFile-->
@@ -52,19 +80,6 @@ describe("User", function () {
     node3.finishAddFile-->
     node4.finishAddFile
      */
-    const user1 = users[0];
-    const user2 = users[1];
-    const user1Address = userAddresses[0];
-    const user2Address = userAddresses[1];
-    const node1 = nodes[0];
-    const node2 = nodes[1];
-    const node3 = nodes[2];
-    const node4 = nodes[3];
-    const node1Address = nodeAddresses[0];
-    const node2Address = nodeAddresses[1];
-    const node3Address = nodeAddresses[2];
-    const node4Address = nodeAddresses[3];
-    const cid = Cids[0];
 
     await chainStorage.connect(user1).userAddFile(cid, Duration, FileExt);
     await chainStorage.connect(node1).nodeAcceptTask(1);
@@ -177,5 +192,41 @@ describe("User", function () {
     // node check
     expect(await nodeStorage.getTotalNodeNumber()).to.equal(4);
     expect(await nodeStorage.getTotalOnlineNodeNumber()).to.equal(4);
+  });
+
+  it("user random operation", async function () {
+    // user1.addFile(cid1)
+    await chainStorage.connect(user1).userAddFile(Cid, Duration, FileExt);
+    // node1 finish addFile(cid1)
+    await chainStorage.connect(node1).nodeAcceptTask(1);
+    await chainStorage.connect(node1).nodeFinishTask(1, FileSize);
+    // user2.deleteFile(cid1)
+    await chainStorage.connect(user1).userDeleteFile(Cid);
+    // node1 finish deleteFile(cid1)
+    await chainStorage.connect(node1).nodeAcceptTask(5);
+    await chainStorage.connect(node1).nodeFinishTask(5, FileSize);
+    // node2/node3 finish addFile(cid1)
+    await chainStorage.connect(node2).nodeAcceptTask(2);
+    await chainStorage.connect(node2).nodeFinishTask(2, FileSize);
+    await chainStorage.connect(node3).nodeAcceptTask(3);
+    await chainStorage.connect(node3).nodeFinishTask(3, FileSize);
+    // user2.addFile(cid1)
+    await chainStorage.connect(user2).userAddFile(Cid, Duration, FileExt);
+    await chainStorage.connect(node2).nodeAcceptTask(6);
+    await chainStorage.connect(node2).nodeFinishTask(6, FileSize);
+    await chainStorage.connect(node4).nodeAcceptTask(4);
+    await chainStorage.connect(node4).nodeFinishTask(4, FileSize);
+    await chainStorage.connect(node3).nodeAcceptTask(7);
+    await chainStorage.connect(node3).nodeFinishTask(7, FileSize);
+    await chainStorage.connect(node1).nodeAcceptTask(8);
+    await chainStorage.connect(node1).nodeFinishTask(8, FileSize);
+    await chainStorage.connect(node2).nodeAcceptTask(9);
+    await chainStorage.connect(node2).nodeFinishTask(9, FileSize);
+    await chainStorage.connect(node3).nodeAcceptTask(10);
+    await chainStorage.connect(node3).nodeFinishTask(10, FileSize);
+    await chainStorage.connect(node4).nodeAcceptTask(11);
+    await chainStorage.connect(node4).nodeFinishTask(11, FileSize);
+
+    await dumpFile();
   });
 });

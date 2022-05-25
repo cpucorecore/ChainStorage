@@ -314,3 +314,8 @@ export async function dumpTaskState(from: any, to: any) {
   }
   console.log("\n");
 }
+
+export async function dumpFile() {
+  console.log("totalFileNumber: " + (await fileStorage.getTotalFileNumber()));
+  console.log("totalFileSize: " + (await fileStorage.getTotalSize()));
+}
