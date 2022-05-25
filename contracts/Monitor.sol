@@ -148,38 +148,30 @@ contract Monitor is Importable, ExternalStorable, IMonitor {
 
     function _isTaskAcceptTimeout(uint256 tid) private view returns (bool isTimeout) {
         uint256 acceptTimeout = _Setting().getTaskAcceptTimeout();
-        (uint256 status,,uint256 createTime,,,,,) = _Task().getTaskState(tid);
+        (uint256 status, uint256 statusTime) = _Task().getStatusAndTime(tid);
 
-        if((TaskCreated == status) && (now > createTime.add(acceptTimeout))) {
+        if((TaskCreated == status) && (now > statusTime.add(acceptTimeout))) {
             isTimeout = true;
         }
     }
 
     function _isTaskTimeout(uint256 tid) private view returns (bool isTimeout) {
-        (uint256 status,,,uint256 acceptTime,,,,) = _Task().getTaskState(tid);
-        (,uint256 action,,,) = _Task().getTask(tid);
-
+        (uint256 status, uint256 statusTime) = _Task().getStatusAndTime(tid);
         if(TaskAccepted != status) {
             return false;
         }
 
+        (,uint256 action,,,) = _Task().getTask(tid);
         if(Add == action) {
             uint256 addFileTimeout = _Setting().getAddFileTaskTimeout();
-            if(now > acceptTime.add(addFileTimeout)) {
+            if(now > statusTime.add(addFileTimeout)) {
                 return true;
             }
 
             uint256 addFileProgressTimeout = _Setting().getAddFileProgressTimeout();
-            (
-                uint256 progressTime,
-                uint256 progressLastSize,
-                uint256 progressCurrentSize,
-                uint256 fileSize,
-                uint256 lastPercentage,
-                uint256 currentPercentage
-            ) = _Task().getAddFileTaskProgress(tid);
+            (uint256 progressTime,,,,,) = _Task().getAddFileTaskProgress(tid);
             if(0 == progressTime) {
-                if(now > acceptTime.add(addFileProgressTimeout)) {
+                if(now > statusTime.add(addFileProgressTimeout)) {
                     return true;
                 }
             } else {
@@ -193,7 +185,7 @@ contract Monitor is Importable, ExternalStorable, IMonitor {
 //            }
         } else {
             uint256 deleteFileTimeout = _Setting().getDeleteFileTaskTimeout();
-            if(now > acceptTime.add(deleteFileTimeout)) {
+            if(now > statusTime.add(deleteFileTimeout)) {
                 return true;
             }
         }

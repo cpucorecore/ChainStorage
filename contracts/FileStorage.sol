@@ -1,5 +1,4 @@
 pragma solidity ^0.5.2;
-pragma experimental ABIEncoderV2;
 
 import "./storages/ExternalStorage.sol";
 import "./interfaces/storages/IFileStorage.sol";
@@ -16,6 +15,7 @@ contract FileStorage is ExternalStorage, IFileStorage {
     }
 
     mapping(string=>FileItem) private cid2fileItem;
+    mapping(bytes32=>string) private cidHash2cid;
     mapping(string=>uint256) private cid2size;
     uint256 private totalSize;
     uint256 private totalFileNumber;
@@ -33,6 +33,8 @@ contract FileStorage is ExternalStorage, IFileStorage {
         EnumerableSet.AddressSet memory nodes;
         cid2fileItem[cid] = FileItem(true, users, nodes);
 
+        bytes32 cidHash = keccak256(bytes(cid));
+        cidHash2cid[cidHash] = cid;
         totalFileNumber = totalFileNumber.add(1);
     }
 
@@ -40,6 +42,10 @@ contract FileStorage is ExternalStorage, IFileStorage {
         mustManager(managerName);
         totalFileNumber = totalFileNumber.sub(1);
         delete cid2fileItem[cid];
+    }
+
+    function getCidByHash(bytes32 hash) external view returns (string memory) {
+        return cidHash2cid[hash];
     }
 
     function getSize(string calldata cid) external view returns (uint256) {

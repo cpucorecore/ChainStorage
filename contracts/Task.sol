@@ -39,7 +39,7 @@ contract Task is Importable, ExternalStorable, ITask {
         (, uint256 action, address taskNodeAddress,,) = _Storage().getTask(tid);
         require(nodeAddress == taskNodeAddress, "T:node have no this task");
 
-        (uint256 status,,,,,,,) = _Storage().getTaskState(tid);
+        (uint256 status,) = _Storage().getStatusAndTime(tid);
         if(Add == action) {
             require(TaskCreated == status, "T:wrong status must[C]");
         } else {
@@ -54,7 +54,7 @@ contract Task is Importable, ExternalStorable, ITask {
         mustAddress(CONTRACT_NODE);
         _checkTaskExist(tid);
 
-        (uint256 status,,,,,,,) = _Storage().getTaskState(tid);
+        (uint256 status,) = _Storage().getStatusAndTime(tid);
         (,uint256 action, address taskNodeAddress,,) = _Storage().getTask(tid);
         require(TaskAccepted == status, "T:task status is not Accepted");
 
@@ -69,7 +69,7 @@ contract Task is Importable, ExternalStorable, ITask {
         (,uint256 action, address taskNodeAddress,,) = _Storage().getTask(tid);
         require(Add == action, "T:only add file task can fail");
 
-        (uint256 status,,,,,,,) = _Storage().getTaskState(tid);
+        (uint256 status,) = _Storage().getStatusAndTime(tid);
         require(TaskAccepted == status, "T:task status is not Accepted");
 
         _Storage().setStatusAndTime(tid, TaskFailed, now);
@@ -81,7 +81,7 @@ contract Task is Importable, ExternalStorable, ITask {
         _checkTaskExist(tid);
 
         (,uint256 action, address taskNodeAddress,,) = _Storage().getTask(tid);
-        (uint256 status,,,,,,,) = _Storage().getTaskState(tid);
+        (uint256 status,) = _Storage().getStatusAndTime(tid);
         require(TaskCreated == status, "T:task status is not Created");
 
         _Storage().setStatusAndTime(tid, TaskAcceptTimeout, now);
@@ -92,7 +92,7 @@ contract Task is Importable, ExternalStorable, ITask {
         mustAddress(CONTRACT_NODE);
         _checkTaskExist(tid);
 
-        (uint256 status,,,,,,,) = _Storage().getTaskState(tid);
+        (uint256 status,) = _Storage().getStatusAndTime(tid);
         (,uint256 action, address taskNodeAddress,,) = _Storage().getTask(tid);
         require(TaskAccepted == status, "T:task status is not Accepted");
 
@@ -108,7 +108,7 @@ contract Task is Importable, ExternalStorable, ITask {
         (,,address taskNodeAddress,,) = _Storage().getTask(tid);
         require(nodeAddress == taskNodeAddress, "T:node have no this task");
 
-        (uint256 status,,,,,,,) = _Storage().getTaskState(tid);
+        (uint256 status,) = _Storage().getStatusAndTime(tid);
         require(TaskAccepted == status, "T:wrong task status,must TaskAccepted");
 
         _Storage().setAddFileTaskProgressBySize(tid, now, size);
@@ -122,7 +122,7 @@ contract Task is Importable, ExternalStorable, ITask {
         require(nodeAddress == taskNodeAddress, "T:node have no this task");
         require(percentage <= 100, "T:percentage must <=100");
 
-        (uint256 status,,,,,,,) = _Storage().getTaskState(tid);
+        (uint256 status,) = _Storage().getStatusAndTime(tid);
         require(TaskAccepted == status, "T:wrong task status,must TaskAccepted");
 
         _Storage().setAddFileTaskProgressByPercentage(tid, now, percentage);
@@ -152,6 +152,10 @@ contract Task is Importable, ExternalStorable, ITask {
         return _Storage().isNodeDoingAddFile(nodeAddress, cid);
     }
 
+    function getAddFileNodes(string calldata cid) external view returns (address[] memory nodeAddresses) {
+        return _Storage().getAddFileNodes(cid);
+    }
+
     function getTask(uint256 tid) external view returns (address, uint256, address, bool, string memory) {
         return _Storage().getTask(tid);
     }
@@ -162,5 +166,9 @@ contract Task is Importable, ExternalStorable, ITask {
 
     function getAddFileTaskProgress(uint256 tid) external view returns (uint256, uint256, uint256, uint256, uint256, uint256) {
         return _Storage().getAddFileTaskProgress(tid);
+    }
+
+    function getStatusAndTime(uint256 tid) external view returns (uint256, uint256) {
+        return _Storage().getStatusAndTime(tid);
     }
 }

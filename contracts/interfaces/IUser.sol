@@ -1,5 +1,4 @@
 pragma solidity ^0.5.2;
-pragma experimental ABIEncoderV2;
 
 interface IUser {
     function register(address userAddress, string calldata ext) external;

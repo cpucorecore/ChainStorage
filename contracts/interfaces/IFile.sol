@@ -1,5 +1,4 @@
 pragma solidity ^0.5.2;
-pragma experimental ABIEncoderV2;
 
 interface IFile {
     function addFile(string calldata cid, address userAddress) external returns (bool finish);

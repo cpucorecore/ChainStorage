@@ -1,4 +1,4 @@
-import { expect, assert } from "chai";
+import { expect } from "chai";
 import {
   Cids,
   Duration,
@@ -12,12 +12,19 @@ import {
   FileSize,
   taskStorage,
   nodeAddresses,
-  userAddresses, accounts, NodeStorageTotal, NodeExt, fileStorage, dumpFile, dumpTask, dumpTaskState
+  userAddresses,
+  accounts,
+  NodeStorageTotal,
+  NodeExt,
+  fileStorage,
+  dumpFile,
+  dumpTask,
+  dumpTaskState,
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
 import { Signer } from "ethers";
 
-describe("User2", function () {
+describe("UserAction2", function () {
   let user1: Signer;
   let user2: Signer;
   let user1Address: string;
@@ -59,7 +66,7 @@ describe("User2", function () {
     await revertToSnapshot();
   });
 
-  async function prepareNode5() {
+  async function node5RegisterAndOnline() {
     node5 = accounts[10];
     node5Address = await node5.getAddress();
     await chainStorage.connect(node5).nodeRegister(NodeStorageTotal, NodeExt);
@@ -69,11 +76,11 @@ describe("User2", function () {
   it("user random operations 3", async function () {
     // user1.addFile(cid)
     await chainStorage.connect(user1).userAddFile(cid, Duration, FileExt);
-    await prepareNode5();
+    await node5RegisterAndOnline();
     // node1 finish task
     await chainStorage.connect(node1).nodeAcceptTask(1);
     await chainStorage.connect(node1).nodeFinishTask(1, FileSize);
-    // node2 finish task
+    // node2 fail task
     await chainStorage.connect(node2).nodeAcceptTask(2);
     await chainStorage.connect(node2).nodeFailTask(2);
     await dumpTask(1, 5);
@@ -105,5 +112,37 @@ describe("User2", function () {
     expect(await taskStorage.getCurrentTid()).to.equal(5);
 
     await dumpFile(cid);
+  });
+
+  it("user random operations 4", async function () {
+    // user1.addFile
+    await chainStorage.connect(user1).userAddFile(cid, Duration, FileExt);
+    // node5 online
+    await node5RegisterAndOnline();
+    // node1 finish task
+    await chainStorage.connect(node1).nodeAcceptTask(1);
+    await chainStorage.connect(node1).nodeFinishTask(1, FileSize);
+    // node2 finish task
+    await chainStorage.connect(node2).nodeAcceptTask(2);
+    await chainStorage.connect(node2).nodeFinishTask(2, FileSize);
+    // node3 fail task
+    await chainStorage.connect(node3).nodeAcceptTask(3);
+    await chainStorage.connect(node3).nodeFailTask(3);
+    // user1.deleteFile
+    await chainStorage.connect(user1).userDeleteFile(cid);
+    // node4 finish task
+    await chainStorage.connect(node4).nodeAcceptTask(4);
+    await chainStorage.connect(node4).nodeFinishTask(4, FileSize);
+    // node1 finish delete task
+    await chainStorage.connect(node1).nodeAcceptTask(6);
+    await chainStorage.connect(node1).nodeFinishTask(6, FileSize);
+    // node2 finish delete task
+    await chainStorage.connect(node2).nodeAcceptTask(7);
+    await chainStorage.connect(node2).nodeFinishTask(7, FileSize);
+    // user2.addFile
+    await chainStorage.connect(user2).userAddFile(cid, Duration, FileExt);
+    // node5 finish add file
+    await chainStorage.connect(node5).nodeAcceptTask(5);
+    await chainStorage.connect(node5).nodeFinishTask(5, FileSize);
   });
 });

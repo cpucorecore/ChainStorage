@@ -23,7 +23,7 @@ import {
 } from "./context";
 import { Signer } from "ethers";
 
-describe("User", function () {
+describe("UserAction", function () {
   let user1: Signer;
   let user2: Signer;
   let user1Address: string;
@@ -63,7 +63,7 @@ describe("User", function () {
     await revertToSnapshot();
   });
 
-  it.skip("user random operations 1", async function () {
+  it("user random operations 1", async function () {
     /* random operations:
     user1.addFile(cid)-->
     node1.finishAddFile-->

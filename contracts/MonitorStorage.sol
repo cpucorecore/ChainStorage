@@ -1,5 +1,4 @@
 pragma solidity ^0.5.2;
-pragma experimental ABIEncoderV2;
 
 import "./storages/ExternalStorage.sol";
 import "./interfaces/storages/IMonitorStorage.sol";

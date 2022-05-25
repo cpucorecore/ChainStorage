@@ -5,15 +5,15 @@ import "../interfaces/IFile.sol";
 import "../interfaces/ITask.sol";
 
 library NodeSelectorForTest {
-    function _NodeStorage(address addr) internal view returns (INodeStorage) {
+    function _NodeStorage(address addr) internal pure returns (INodeStorage) {
         return INodeStorage(addr);
     }
 
-    function _File(address fileAddress) internal view returns (IFile) {
+    function _File(address fileAddress) internal pure returns (IFile) {
         return IFile(fileAddress);
     }
 
-    function _Task(address taskAddress) internal view returns (ITask) {
+    function _Task(address taskAddress) internal pure returns (ITask) {
         return ITask(taskAddress);
     }
 

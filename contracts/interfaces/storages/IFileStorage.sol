@@ -1,10 +1,10 @@
 pragma solidity ^0.5.2;
-pragma experimental ABIEncoderV2;
 
 contract IFileStorage {
     function exist(string memory cid) public view returns (bool);
     function newFile(string calldata cid) external;
     function deleteFile(string calldata cid) external;
+    function getCidByHash(bytes32 hash) external view returns (string memory);
 
     function getSize(string calldata cid) external view returns (uint256);
     function setSize(string calldata cid, uint256 size) external;

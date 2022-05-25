@@ -15,7 +15,7 @@ import {
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
 
-describe("User", function () {
+describe("Event", function () {
   before(async () => {
     await prepareContext(2, 2, 2, 0, 0, 2);
   });
