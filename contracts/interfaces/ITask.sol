@@ -16,7 +16,6 @@ interface ITask {
     function isOver(uint256 tid) external view returns (bool);
     function isNodeDoingAddFile(address nodeAddress, string calldata cid) external view returns (bool);
     function getTask(uint256 tid) external view returns (address, uint256, address, bool, string memory);
-    function getTaskState(uint256 tid) external view returns (uint256, uint256, uint256, uint256, uint256, uint256, uint256, uint256);
     function getAddFileTaskProgress(uint256 tid) external view returns (uint256, uint256, uint256, uint256, uint256, uint256);
     function getStatusAndTime(uint256 tid) external view returns (uint256, uint256);
 }

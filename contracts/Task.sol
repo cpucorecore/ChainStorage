@@ -156,10 +156,6 @@ contract Task is Importable, ExternalStorable, ITask {
         return _Storage().getTask(tid);
     }
 
-    function getTaskState(uint256 tid) external view returns (uint256, uint256, uint256, uint256, uint256, uint256, uint256, uint256) {
-        return _Storage().getTaskState(tid);
-    }
-
     function getAddFileTaskProgress(uint256 tid) external view returns (uint256, uint256, uint256, uint256, uint256, uint256) {
         return _Storage().getAddFileTaskProgress(tid);
     }
