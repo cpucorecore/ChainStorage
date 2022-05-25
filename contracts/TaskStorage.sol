@@ -103,7 +103,7 @@ contract TaskStorage is ExternalStorage, ITaskStorage {
         return cid2addFileNodes[cid].values();
     }
 
-    function getAddingFileCidHashes(address nodeAddress) external view returns (bytes32[] memory cidHashes) {
+    function getAddFileCidHashes(address nodeAddress) external view returns (bytes32[] memory cidHashes) {
         return node2addingFileCidHashes[nodeAddress].values();
     }
 
