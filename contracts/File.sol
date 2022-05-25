@@ -117,4 +117,12 @@ contract File is Importable, ExternalStorable, IFile {
     function getSize(string calldata cid) external view returns (uint256) {
         return _Storage().getSize(cid);
     }
+
+    function getNodes(string calldata cid) external view returns (address[] memory) {
+        return _Storage().getNodes(cid);
+    }
+
+    function getNodeNumber(string calldata cid) external view returns (uint256) {
+        return _Storage().getNodes(cid).length;
+    }
 }

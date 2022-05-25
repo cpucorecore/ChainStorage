@@ -315,7 +315,13 @@ export async function dumpTaskState(from: any, to: any) {
   console.log("\n");
 }
 
-export async function dumpFile() {
+export async function dumpFile(cid: string) {
   console.log("totalFileNumber: " + (await fileStorage.getTotalFileNumber()));
   console.log("totalFileSize: " + (await fileStorage.getTotalSize()));
+  console.log(
+    "cid[" + cid + "] users: " + (await fileStorage["getUsers(string)"](cid))
+  );
+  console.log(
+    "cid[" + cid + "] nodes: " + (await fileStorage["getNodes(string)"](cid))
+  );
 }

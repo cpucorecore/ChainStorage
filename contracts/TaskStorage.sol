@@ -2,8 +2,11 @@ pragma solidity ^0.5.2;
 
 import "./storages/ExternalStorage.sol";
 import "./interfaces/storages/ITaskStorage.sol";
+import "./lib/EnumerableSet.sol";
 
 contract TaskStorage is ExternalStorage, ITaskStorage {
+    using EnumerableSet for EnumerableSet.Bytes32Set;
+
     struct TaskItem {
         address user;
         uint256 action;
@@ -37,6 +40,7 @@ contract TaskStorage is ExternalStorage, ITaskStorage {
     mapping(uint256=>TaskState) private tid2taskState;
     mapping(uint256=>AddFileTaskProgress) private tid2addFileProgress;
     mapping(address=>uint256) private node2nodeMaxTid;
+    mapping(address=>EnumerableSet.Bytes32Set) private node2addingFileCidHashes;
 
     constructor(address _manager) public ExternalStorage(_manager) {}
 
@@ -48,6 +52,7 @@ contract TaskStorage is ExternalStorage, ITaskStorage {
         tid2taskState[currentTid] = TaskState(TaskCreated, block.number, now, 0, 0, 0, 0, 0);
         if(Add == action) {
             tid2addFileProgress[currentTid] = AddFileTaskProgress(0, 0, 0, 0, 0, 0);
+            node2addingFileCidHashes[nodeAddress].add(keccak256(bytes(cid)));
         }
 
         node2nodeMaxTid[nodeAddress] = currentTid;
@@ -81,6 +86,10 @@ contract TaskStorage is ExternalStorage, ITaskStorage {
             over = (TaskFinished == tid2taskState[tid].status);
         }
         return over;
+    }
+
+    function isNodeDoingAddFile(address nodeAddress, string calldata cid) external view returns (bool) {
+        return node2addingFileCidHashes[nodeAddress].contains(keccak256(bytes(cid)));
     }
 
     function getTaskState(uint256 tid) external view returns (uint256, uint256, uint256, uint256, uint256, uint256, uint256, uint256) {
@@ -127,6 +136,13 @@ contract TaskStorage is ExternalStorage, ITaskStorage {
             tid2taskState[tid].failTime = time;
         } else if(TaskTimeout == status) {
             tid2taskState[tid].timeoutTime = time;
+        }
+
+        address nodeAddress = tid2taskItem[tid].node;
+        bytes32 cidHash = keccak256(bytes(tid2taskItem[tid].cid));
+        uint256 action = tid2taskItem[tid].action;
+        if(0 == action && TaskAccepted != status) {
+            node2addingFileCidHashes[nodeAddress].remove(cidHash);
         }
     }
 

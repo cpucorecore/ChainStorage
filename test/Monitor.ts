@@ -19,6 +19,8 @@ import {
   monitors,
   AddFileProgressTimeout,
   FileSize,
+  NodeStorageTotal,
+  NodeExt,
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
 
@@ -34,6 +36,12 @@ describe("Monitor", function () {
   afterEach(async function () {
     await revertToSnapshot();
   });
+
+  async function prepareNode4() {
+    const node5 = accounts[10];
+    await chainStorage.connect(node5).nodeRegister(NodeStorageTotal, NodeExt);
+    await chainStorage.connect(node5).nodeOnline();
+  }
 
   it("exist", async function () {
     const monitor = accounts[10];
@@ -100,6 +108,7 @@ export const AddFileProgressTimeout = 60 * 10;
     await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
     await increaseTime(TaskAcceptTimeout);
 
+    await prepareNode4();
     await chainStorage.connect(monitor).monitorReportTaskAcceptTimeout(1);
   });
 
@@ -136,6 +145,8 @@ export const AddFileProgressTimeout = 60 * 10;
     await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
     await chainStorage.connect(node1).nodeAcceptTask(1);
     await increaseTime(AddFileTaskTimeout);
+
+    await prepareNode4();
     await chainStorage.connect(monitor).monitorReportTaskTimeout(1);
   });
 

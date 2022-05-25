@@ -1,14 +1,24 @@
 pragma solidity ^0.5.2;
 
 import "../interfaces/storages/INodeStorage.sol";
+import "../interfaces/IFile.sol";
+import "../interfaces/ITask.sol";
 
 library NodeSelector {
-    function NodeStorage(address addr) internal view returns (INodeStorage) {
-        return INodeStorage(addr);
+    function _NodeStorage(address nodeStorageAddress) internal view returns (INodeStorage) {
+        return INodeStorage(nodeStorageAddress);
     }
 
-    function selectNodes(address nodeStorageAddr, uint256 count) internal view returns (address[] memory nodes, bool success) {
-        address[] memory allOnlineNodeAddresses = NodeStorage(nodeStorageAddr).getAllOnlineNodeAddresses();
+    function _File(address fileAddress) internal view returns (IFile) {
+        return IFile(fileAddress);
+    }
+
+    function _Task(address taskAddress) internal view returns (ITask) {
+        return ITask(taskAddress);
+    }
+
+    function selectNodes(address nodeStorageAddress, uint256 count) internal view returns (address[] memory nodes, bool success) {
+        address[] memory allOnlineNodeAddresses = _NodeStorage(nodeStorageAddress).getAllOnlineNodeAddresses();
 
         if(allOnlineNodeAddresses.length < count) {
             return(allOnlineNodeAddresses, false);
@@ -34,6 +44,44 @@ library NodeSelector {
             }
 
             return (result, true);
+        }
+    }
+
+    function selectOneNode(
+        address nodeStorageAddress,
+        address fileAddress,
+        address taskAddress,
+        address excludedAddress,
+        string memory cid
+    ) internal view returns (address nodeAddress, bool success) {
+        address[] memory allOnlineNodeAddresses = _NodeStorage(nodeStorageAddress).getAllOnlineNodeAddresses();
+        if(0 == allOnlineNodeAddresses.length) {
+            return (address(0), false);
+        }
+
+        address[] memory existNodeAddresses = _File(fileAddress).getNodes(cid);
+
+        for(uint i=0; i<allOnlineNodeAddresses.length; i++) {
+            bool notExist = true;
+
+            for(uint j=0; j<existNodeAddresses.length; j++) {
+                if(allOnlineNodeAddresses[i] == existNodeAddresses[j]) {
+                    notExist = false;
+                    break;
+                }
+            }
+
+            if(allOnlineNodeAddresses[i] == excludedAddress) {
+                notExist = false;
+            }
+
+            if(_Task(taskAddress).isNodeDoingAddFile(allOnlineNodeAddresses[i], cid)) {
+                notExist = false;
+            }
+
+            if(notExist) {
+                return (allOnlineNodeAddresses[i], true);
+            }
         }
     }
 }

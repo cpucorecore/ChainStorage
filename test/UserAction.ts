@@ -17,7 +17,8 @@ import {
   dumpTaskState,
   fileStorage,
   userAddresses,
-  nodeStorage, Cid, dumpFile
+  nodeStorage,
+  dumpFile,
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
 import { Signer } from "ethers";
@@ -62,7 +63,7 @@ describe("User", function () {
     await revertToSnapshot();
   });
 
-  it.skip("user random operation", async function () {
+  it.skip("user random operations 1", async function () {
     /* random operations:
     user1.addFile(cid)-->
     node1.finishAddFile-->
@@ -194,14 +195,14 @@ describe("User", function () {
     expect(await nodeStorage.getTotalOnlineNodeNumber()).to.equal(4);
   });
 
-  it("user random operation", async function () {
+  it("user random operations 2", async function () {
     // user1.addFile(cid1)
-    await chainStorage.connect(user1).userAddFile(Cid, Duration, FileExt);
+    await chainStorage.connect(user1).userAddFile(cid, Duration, FileExt);
     // node1 finish addFile(cid1)
     await chainStorage.connect(node1).nodeAcceptTask(1);
     await chainStorage.connect(node1).nodeFinishTask(1, FileSize);
     // user2.deleteFile(cid1)
-    await chainStorage.connect(user1).userDeleteFile(Cid);
+    await chainStorage.connect(user1).userDeleteFile(cid);
     // node1 finish deleteFile(cid1)
     await chainStorage.connect(node1).nodeAcceptTask(5);
     await chainStorage.connect(node1).nodeFinishTask(5, FileSize);
@@ -211,7 +212,7 @@ describe("User", function () {
     await chainStorage.connect(node3).nodeAcceptTask(3);
     await chainStorage.connect(node3).nodeFinishTask(3, FileSize);
     // user2.addFile(cid1)
-    await chainStorage.connect(user2).userAddFile(Cid, Duration, FileExt);
+    await chainStorage.connect(user2).userAddFile(cid, Duration, FileExt);
     await chainStorage.connect(node2).nodeAcceptTask(6);
     await chainStorage.connect(node2).nodeFinishTask(6, FileSize);
     await chainStorage.connect(node4).nodeAcceptTask(4);
@@ -227,6 +228,41 @@ describe("User", function () {
     await chainStorage.connect(node4).nodeAcceptTask(11);
     await chainStorage.connect(node4).nodeFinishTask(11, FileSize);
 
-    await dumpFile();
+    expect(await fileStorage.userExist(cid, user1Address)).to.equal(false);
+    expect(await fileStorage.userExist(cid, user2Address)).to.equal(true);
+    expect(await fileStorage.nodeExist(cid, node1Address)).to.equal(true);
+    expect(await fileStorage.nodeExist(cid, node2Address)).to.equal(true);
+    expect(await fileStorage.nodeExist(cid, node3Address)).to.equal(true);
+    expect(await fileStorage.nodeExist(cid, node4Address)).to.equal(true);
+    expect(await fileStorage.getTotalSize()).to.equal(FileSize);
+    expect(await fileStorage.getTotalFileNumber()).to.equal(1);
+    expect(await taskStorage.getCurrentTid()).to.equal(11);
+
+    await dumpFile(cid);
+  });
+
+  it("user random operations 2", async function () {
+    await chainStorage.connect(user1).userAddFile(cid, Duration, FileExt);
+    await chainStorage.connect(node1).nodeAcceptTask(1);
+    await chainStorage.connect(node1).nodeFinishTask(1, FileSize);
+    await chainStorage.connect(node2).nodeAcceptTask(2);
+    await chainStorage.connect(node2).nodeFinishTask(2, FileSize);
+    await chainStorage.connect(node3).nodeAcceptTask(3);
+    await chainStorage.connect(node3).nodeFinishTask(3, FileSize);
+    await chainStorage.connect(user2).userAddFile(cid, Duration, FileExt);
+    await chainStorage.connect(node4).nodeAcceptTask(4);
+    await chainStorage.connect(node4).nodeFinishTask(4, FileSize);
+
+    expect(await fileStorage.userExist(cid, user1Address)).to.equal(true);
+    expect(await fileStorage.userExist(cid, user2Address)).to.equal(true);
+    expect(await fileStorage.nodeExist(cid, node1Address)).to.equal(true);
+    expect(await fileStorage.nodeExist(cid, node2Address)).to.equal(true);
+    expect(await fileStorage.nodeExist(cid, node3Address)).to.equal(true);
+    expect(await fileStorage.nodeExist(cid, node4Address)).to.equal(true);
+    expect(await fileStorage.getTotalSize()).to.equal(FileSize);
+    expect(await fileStorage.getTotalFileNumber()).to.equal(1);
+    expect(await taskStorage.getCurrentTid()).to.equal(4);
+
+    await dumpFile(cid);
   });
 });

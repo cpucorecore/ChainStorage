@@ -162,7 +162,9 @@ contract Node is Importable, ExternalStorable, INode {
         }
 
         if(Add == action) {
-            _retryAddFileTask(userAddress, cid);
+            if(_File().getNodeNumber(cid) < _Setting().getReplica()) {
+                _retryAddFileTask(userAddress, cid, nodeAddress);
+            }
         }
 
         _Task().failTask(tid);
@@ -175,7 +177,9 @@ contract Node is Importable, ExternalStorable, INode {
         _offline(nodeAddress);
         _Task().acceptTaskTimeout(tid);
         if(Add == action) {
-            _retryAddFileTask(userAddress, cid);
+            if(_File().getNodeNumber(cid) < _Setting().getReplica()) {
+                _retryAddFileTask(userAddress, cid, nodeAddress);
+            }
         }
     }
 
@@ -193,7 +197,9 @@ contract Node is Importable, ExternalStorable, INode {
                 _File().onAddFileFail(userAddress, cid);
                 return;
             }
-            _retryAddFileTask(userAddress, cid);
+            if(_File().getNodeNumber(cid) < _Setting().getReplica()) {
+                _retryAddFileTask(userAddress, cid, nodeAddress);
+            }
         }
     }
 
@@ -207,10 +213,10 @@ contract Node is Importable, ExternalStorable, INode {
         emit NodeStatusChanged(nodeAddress, status, NodeMaintain);
     }
 
-    function _retryAddFileTask(address userAddress, string memory cid) private {
+    function _retryAddFileTask(address userAddress, string memory cid, address excludedAddress) private {
         address nodeStorageAddress = getStorage();
-        (address[] memory nodes, bool success) = nodeStorageAddress.selectNodes(1);
+        (address node, bool success) = nodeStorageAddress.selectOneNode(requireAddress(CONTRACT_FILE), requireAddress(CONTRACT_TASK), excludedAddress, cid);
         require(success, "N:no available node");
-        _Task().issueTask(Add, userAddress, cid, nodes[0], false);
+        _Task().issueTask(Add, userAddress, cid, node, false);
     }
 }

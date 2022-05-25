@@ -148,6 +148,10 @@ contract Task is Importable, ExternalStorable, ITask {
         return _Storage().isOver(tid);
     }
 
+    function isNodeDoingAddFile(address nodeAddress, string calldata cid) external view returns (bool) {
+        return _Storage().isNodeDoingAddFile(nodeAddress, cid);
+    }
+
     function getTask(uint256 tid) external view returns (address, uint256, address, bool, string memory) {
         return _Storage().getTask(tid);
     }
