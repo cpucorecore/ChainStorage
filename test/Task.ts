@@ -10,7 +10,8 @@ import {
   users,
   Cid,
   nodes,
-  FileSize, Cids, nodeAddresses, increaseTime, AddFileTaskTimeout, registerMoreNodesAndOnline, monitors, nodeStorage
+  FileSize,
+  Cids,
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
 import { Signer } from "ethers";
@@ -81,5 +82,16 @@ describe("Task", function () {
     await expect(
       chainStorage.connect(nodes[0]).nodeFinishTask(1, FileSize)
     ).to.revertedWith("T:task status is not Accepted");
+  });
+
+  it("deleteFile task should not fail", async function () {
+    await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
+    await chainStorage.connect(nodes[0]).nodeFinishTask(1, FileSize);
+    await chainStorage.connect(user).userDeleteFile(Cid);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(3);
+    await expect(
+      chainStorage.connect(nodes[0]).nodeFailTask(3)
+    ).to.revertedWith("T:only add file task can fail");
   });
 });

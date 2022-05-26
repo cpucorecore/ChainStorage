@@ -3,8 +3,8 @@ pragma solidity ^0.5.2;
 interface ITask {
     function issueTask(uint256 action, address userAddress, string calldata cid, address nodeAddress, bool noCallback) external returns (uint256);
     function acceptTask(address nodeAddress, uint256 tid) external;
-    function finishTask(uint256 tid) external;
-    function failTask(uint256 tid) external;
+    function finishTask(address nodeAddress, uint256 tid) external;
+    function failTask(address nodeAddress, uint256 tid) external;
     function acceptTaskTimeout(uint256 tid) external;
     function taskTimeout(uint256 tid) external;
     function reportAddFileProgressBySize(address nodeAddress, uint256 tid, uint256 size) external;
