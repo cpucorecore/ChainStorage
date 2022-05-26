@@ -10,7 +10,7 @@ import {
   users,
   Cid,
   nodes,
-  FileSize,
+  FileSize, Cids, nodeAddresses, increaseTime, AddFileTaskTimeout, registerMoreNodesAndOnline, monitors, nodeStorage
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
 import { Signer } from "ethers";
@@ -19,7 +19,7 @@ describe("Task", function () {
   let user: Signer;
 
   before(async () => {
-    await prepareContext(2, 2, 2, 0, 0, 2);
+    await prepareContext(2, 2, 2, 1, 1, 2);
     user = users[0];
   });
 
@@ -36,6 +36,66 @@ describe("Task", function () {
     await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
     expect(await taskStorage.exist(1)).to.equal(true);
     expect(await taskStorage.exist(2)).to.equal(true);
+  });
+
+  it("currentTid should be 0", async function () {
+    expect(await taskStorage.getCurrentTid()).to.equal(0);
+  });
+
+  it("currentTid should be update after user addFile/deleteFile", async function () {
+    await chainStorage.connect(user).userAddFile(Cids[0], Duration, FileExt);
+    expect(await taskStorage.getCurrentTid()).to.equal(2);
+    await chainStorage.connect(user).userDeleteFile(Cids[0]);
+    expect(await taskStorage.getCurrentTid()).to.equal(2);
+    await chainStorage.connect(user).userAddFile(Cids[1], Duration, FileExt);
+    expect(await taskStorage.getCurrentTid()).to.equal(4);
+  });
+
+  it("currentTid should be update after user deleteFile", async function () {
+    await chainStorage.connect(user).userAddFile(Cids[0], Duration, FileExt);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
+    await chainStorage.connect(nodes[0]).nodeFinishTask(1, FileSize);
+    await chainStorage.connect(user).userDeleteFile(Cids[0]);
+    expect(await taskStorage.getCurrentTid()).to.equal(3);
+  });
+
+  it("nodeMaxTid should be 0", async function () {
+    expect(await taskStorage.getNodeMaxTid(nodeAddresses[0])).to.equal(0);
+    expect(await taskStorage.getNodeMaxTid(nodeAddresses[1])).to.equal(0);
+  });
+
+  it("nodeMaxTid should update after user addFile", async function () {
+    await chainStorage.connect(user).userAddFile(Cids[0], Duration, FileExt);
+    expect(await taskStorage.getNodeMaxTid(nodeAddresses[0])).to.equal(1);
+    expect(await taskStorage.getNodeMaxTid(nodeAddresses[1])).to.equal(2);
+    await chainStorage.connect(user).userAddFile(Cids[1], Duration, FileExt);
+    expect(await taskStorage.getNodeMaxTid(nodeAddresses[0])).to.equal(3);
+    expect(await taskStorage.getNodeMaxTid(nodeAddresses[1])).to.equal(4);
+  });
+
+  it("nodeMaxTid should update after user deleteFile", async function () {
+    await chainStorage.connect(user).userAddFile(Cids[0], Duration, FileExt);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
+    await chainStorage.connect(nodes[0]).nodeFinishTask(1, FileSize);
+    await chainStorage.connect(user).userDeleteFile(Cids[0]);
+    expect(await taskStorage.getNodeMaxTid(nodeAddresses[0])).to.equal(3);
+    expect(await taskStorage.getNodeMaxTid(nodeAddresses[1])).to.equal(2);
+  });
+
+  it.skip("TODO fix", async function () {
+    await chainStorage.connect(user).userAddFile(Cids[0], Duration, FileExt);
+    await increaseTime(AddFileTaskTimeout);
+    await registerMoreNodesAndOnline(1);
+
+    await chainStorage.connect(monitors[0]).monitorReportTaskAcceptTimeout(1);
+    expect(await taskStorage.getNodeMaxTid(nodeAddresses[0])).to.equal(1);
+    expect(await taskStorage.getNodeMaxTid(nodeAddresses[1])).to.equal(2);
+    expect(await taskStorage.getNodeMaxTid(nodeAddresses[2])).to.equal(3);
+
+    expect(await nodeStorage.getStatus(nodeAddresses[0])).to.equal(4);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
+    await chainStorage.connect(nodes[0]).nodeFinishTask(1, FileSize);
+    await chainStorage.connect(nodes[0]).nodeOnline();
   });
 
   it("should fail to finishTask for not acceptTask first", async function () {

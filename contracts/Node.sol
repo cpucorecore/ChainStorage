@@ -207,10 +207,10 @@ contract Node is Importable, ExternalStorable, INode {
         uint256 status = _Storage().getStatus(nodeAddress);
         require(NodeOnline == status, "N:wrong status must[O]");
 
-        _Storage().setStatus(nodeAddress, NodeMaintain);
+        _Storage().setStatus(nodeAddress, NodeOffline);
         _Storage().deleteOnlineNode(nodeAddress);
 
-        emit NodeStatusChanged(nodeAddress, status, NodeMaintain);
+        emit NodeStatusChanged(nodeAddress, status, NodeOffline);
     }
 
     function _retryAddFileTask(address userAddress, string memory cid, address excludedAddress) private {
