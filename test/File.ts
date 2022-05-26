@@ -14,8 +14,7 @@ import {
   userAddresses,
   taskStorage,
   nodeAddresses,
-  dumpTask,
-  dumpTaskState, Cids
+  Cids,
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
 

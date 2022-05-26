@@ -8,6 +8,11 @@ import {
   NodeStorageTotal,
   NodeExt,
   nodeStorage,
+  users,
+  Duration,
+  FileExt,
+  Cid,
+  FileSize,
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
 import { Signer } from "ethers";
@@ -17,7 +22,7 @@ describe("Node", function () {
   let nodeAddress: string;
 
   before(async () => {
-    await prepareContext(2, 0, 0, 0, 0, 2);
+    await prepareContext(2, 0, 0, 0, 0, 1);
 
     node = accounts[19];
     nodeAddress = await node.getAddress();
@@ -31,12 +36,109 @@ describe("Node", function () {
     await revertToSnapshot();
   });
 
-  it("exist", async function () {
+  it("should not exist before register", async function () {
     expect(await nodeStorage.exist(nodeAddress)).to.equal(false);
+  });
+
+  it("should exist after register", async function () {
     await chainStorage.connect(node).nodeRegister(NodeStorageTotal, NodeExt);
     expect(await nodeStorage.exist(nodeAddress)).to.equal(true);
+  });
+
+  it("should not exist after deRegister", async function () {
+    await chainStorage.connect(node).nodeRegister(NodeStorageTotal, NodeExt);
     await chainStorage.connect(node).nodeDeRegister();
     expect(await nodeStorage.exist(nodeAddress)).to.equal(false);
+  });
+
+  it("ext should empty before register", async function () {
+    expect(await nodeStorage.getExt(nodeAddress)).to.equal("");
+  });
+
+  it("ext should right after register", async function () {
+    await chainStorage.connect(node).nodeRegister(NodeStorageTotal, NodeExt);
+    expect(await nodeStorage.getExt(nodeAddress)).to.equal(NodeExt);
+  });
+
+  it("ext should empty after deRegister", async function () {
+    await chainStorage.connect(node).nodeRegister(NodeStorageTotal, NodeExt);
+    await chainStorage.connect(node).nodeDeRegister();
+    expect(await nodeStorage.getExt(nodeAddress)).to.equal("");
+  });
+
+  it("ext should right after setExt", async function () {
+    await chainStorage.connect(node).nodeRegister(NodeStorageTotal, NodeExt);
+    const newExt = "newExt";
+    await chainStorage.connect(node).nodeSetExt(newExt);
+    expect(await nodeStorage.getExt(nodeAddress)).to.equal(newExt);
+  });
+
+  it("storageTotal should be0 before register", async function () {
+    expect(await nodeStorage.getStorageTotal(nodeAddress)).to.equal(0);
+  });
+
+  it("storageTotal should right after register", async function () {
+    await chainStorage.connect(node).nodeRegister(NodeStorageTotal, NodeExt);
+    expect(await nodeStorage.getStorageTotal(nodeAddress)).to.equal(
+      NodeStorageTotal
+    );
+  });
+
+  it("storageTotal should be 0 be after deRegister", async function () {
+    await chainStorage.connect(node).nodeRegister(NodeStorageTotal, NodeExt);
+    await chainStorage.connect(node).nodeDeRegister();
+    expect(await nodeStorage.getStorageTotal(nodeAddress)).to.equal(0);
+  });
+
+  it("ext should right after setExt", async function () {
+    await chainStorage.connect(node).nodeRegister(NodeStorageTotal, NodeExt);
+    const newStorageTotal = NodeStorageTotal * 2;
+    await chainStorage.connect(node).nodeSetStorageTotal(newStorageTotal);
+    expect(await nodeStorage.getStorageTotal(nodeAddress)).to.equal(
+      newStorageTotal
+    );
+  });
+
+  it("should fail setStorageTotal for newStorageTotal little than used", async function () {
+    await chainStorage.connect(node).nodeRegister(NodeStorageTotal, NodeExt);
+    await chainStorage.connect(node).nodeOnline();
+    await chainStorage.connect(users[0]).userAddFile(Cid, Duration, FileExt);
+    await chainStorage.connect(node).nodeAcceptTask(1);
+    await chainStorage.connect(node).nodeFinishTask(1, FileSize);
+    await expect(
+      chainStorage.connect(node).nodeSetStorageTotal(FileSize - 1)
+    ).to.revertedWith("N:too small");
+  });
+
+  it("storageUsed should be 0 before register", async function () {
+    expect(await nodeStorage.getStorageUsed(nodeAddress)).to.equal(0);
+  });
+
+  it("storageUsed should be 0 after register", async function () {
+    await chainStorage.connect(node).nodeRegister(NodeStorageTotal, NodeExt);
+    await chainStorage.connect(node).nodeOnline();
+    expect(await nodeStorage.getStorageUsed(nodeAddress)).to.equal(0);
+  });
+
+  it("storageUsed should right after finish addFile task", async function () {
+    await chainStorage.connect(node).nodeRegister(NodeStorageTotal, NodeExt);
+    await chainStorage.connect(node).nodeOnline();
+    await chainStorage.connect(users[0]).userAddFile(Cid, Duration, FileExt);
+    await chainStorage.connect(node).nodeAcceptTask(1);
+    await chainStorage.connect(node).nodeFinishTask(1, FileSize);
+    expect(await nodeStorage.getStorageUsed(nodeAddress)).to.equal(FileSize);
+  });
+
+  it("storageUsed should be 0 after finish deleteFile task", async function () {
+    await chainStorage.connect(node).nodeRegister(NodeStorageTotal, NodeExt);
+    await chainStorage.connect(node).nodeOnline();
+    await chainStorage.connect(users[0]).userAddFile(Cid, Duration, FileExt);
+    await chainStorage.connect(node).nodeAcceptTask(1);
+    await chainStorage.connect(node).nodeFinishTask(1, FileSize);
+    await chainStorage.connect(users[0]).userDeleteFile(Cid);
+    await chainStorage.connect(node).nodeAcceptTask(2);
+    await chainStorage.connect(node).nodeFinishTask(2, FileSize);
+    expect(await nodeStorage.getStorageUsed(nodeAddress)).to.equal(0);
   });
 
   it("status", async function () {
@@ -64,33 +166,27 @@ describe("Node", function () {
     );
   });
 
-  it("ext", async function () {
-    const newExt = "newExt";
-    expect(await nodeStorage.getExt(nodeAddress)).to.equal("");
-
+  it("MaxFinishedTid should be 0", async function () {
+    expect(await nodeStorage.getMaxFinishedTid(nodeAddress)).to.equal(0);
     await chainStorage.connect(node).nodeRegister(NodeStorageTotal, NodeExt);
-    expect(await nodeStorage.getExt(nodeAddress)).to.equal(NodeExt);
-
-    await chainStorage.connect(node).nodeSetExt(newExt);
-    expect(await nodeStorage.getExt(nodeAddress)).to.equal(newExt);
-
-    await chainStorage.connect(node).nodeDeRegister();
-    expect(await nodeStorage.getExt(nodeAddress)).to.equal("");
+    await chainStorage.connect(node).nodeOnline();
+    expect(await nodeStorage.getMaxFinishedTid(nodeAddress)).to.equal(0);
   });
 
-  it("storage", async function () {
-    expect(await nodeStorage.getStorageUsed(nodeAddress)).to.equal(0);
-    expect(await nodeStorage.getStorageTotal(nodeAddress)).to.equal(0);
-
+  it("MaxFinishedTid should be right after finish task", async function () {
     await chainStorage.connect(node).nodeRegister(NodeStorageTotal, NodeExt);
-    expect(await nodeStorage.getStorageUsed(nodeAddress)).to.equal(0);
-    expect(await nodeStorage.getStorageTotal(nodeAddress)).to.equal(
-      NodeStorageTotal
-    );
+    await chainStorage.connect(node).nodeOnline();
 
-    await chainStorage.connect(node).nodeDeRegister();
-    expect(await nodeStorage.getStorageUsed(nodeAddress)).to.equal(0);
-    expect(await nodeStorage.getStorageTotal(nodeAddress)).to.equal(0);
+    await chainStorage.connect(users[0]).userAddFile(Cid, Duration, FileExt);
+
+    await chainStorage.connect(node).nodeAcceptTask(1);
+    await chainStorage.connect(node).nodeFinishTask(1, FileSize);
+    expect(await nodeStorage.getMaxFinishedTid(nodeAddress)).to.equal(1);
+
+    await chainStorage.connect(users[0]).userDeleteFile(Cid);
+    await chainStorage.connect(node).nodeAcceptTask(2);
+    await chainStorage.connect(node).nodeFinishTask(2, FileSize);
+    expect(await nodeStorage.getMaxFinishedTid(nodeAddress)).to.equal(2);
   });
 
   it("all [online] node test", async function () {
@@ -98,8 +194,8 @@ describe("Node", function () {
     const node2: Signer = accounts[18];
     const node3: Signer = accounts[17];
 
-    let allNodeAddresses: string[] = [];
-    let allOnlineNodeAddresses: string[] = [];
+    let allNodeAddresses: string[];
+    let allOnlineNodeAddresses: string[];
 
     expect(await nodeStorage.getTotalNodeNumber()).to.equal(0);
     expect(await nodeStorage.getTotalOnlineNodeNumber()).to.equal(0);
@@ -205,5 +301,9 @@ describe("Node", function () {
     assert.lengthOf(allNodeAddresses, 0);
     allOnlineNodeAddresses = await nodeStorage["getAllOnlineNodeAddresses()"]();
     assert.lengthOf(allOnlineNodeAddresses, 0);
+  });
+
+  it("AddFileFailedCount should be 0", async function () {
+    expect(await nodeStorage.getAddFileFailedCount(Cid)).to.equal(0);
   });
 });
