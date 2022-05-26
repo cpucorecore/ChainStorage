@@ -243,7 +243,11 @@ export async function registerMoreNodesAndOnline(nodeNumber: any) {
     nodeNumber = accounts.length - nodes.length;
   }
   if (nodeNumber === 0) return;
-  _nodeNumber = nodeNumber;
+  if (_nodeNumber === 0) {
+    _nodeNumber = nodeNumber;
+  } else {
+    _nodeNumber += nodeNumber;
+  }
 
   const from = accounts.length - nodes.length - 1; // from > to
   const to = from - nodeNumber + 1;
@@ -263,6 +267,7 @@ export async function revertNodes() {
     nodes.pop();
     nodeAddresses.pop();
   }
+  _nodeNumber = 0;
 }
 
 export const increaseTime = async (seconds: number) => {

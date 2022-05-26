@@ -16,4 +16,6 @@ interface INode {
 
     function reportAcceptTaskTimeout(uint256 tid) external;
     function reportTaskTimeout(uint256 tid) external;
+
+    function taskIssuedCallback(address nodeAddress, uint256 tid) external;
 }

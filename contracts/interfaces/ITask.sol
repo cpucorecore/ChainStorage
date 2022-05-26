@@ -12,7 +12,6 @@ interface ITask {
 
     function exist(uint256 tid) external view returns (bool);
     function getCurrentTid() external view returns (uint256);
-    function getNodeMaxTid(address nodeAddress) external view returns (uint256);
     function isOver(uint256 tid) external view returns (bool);
     function isNodeDoingAddFile(address nodeAddress, string calldata cid) external view returns (bool);
     function getTask(uint256 tid) external view returns (address, uint256, address, bool, string memory);

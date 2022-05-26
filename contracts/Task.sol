@@ -4,6 +4,7 @@ import "./base/Importable.sol";
 import "./base/ExternalStorable.sol";
 import "./interfaces/ITask.sol";
 import "./interfaces/storages/ITaskStorage.sol";
+import "./interfaces/INode.sol";
 
 contract Task is Importable, ExternalStorable, ITask {
     event TaskIssued(address indexed nodeAddress, uint256 indexed tid);
@@ -24,11 +25,16 @@ contract Task is Importable, ExternalStorable, ITask {
         return ITaskStorage(getStorage());
     }
 
+    function _Node() private view returns (INode) {
+        return INode(requireAddress(CONTRACT_NODE));
+    }
+
     function issueTask(uint256 action, address userAddress, string calldata cid, address nodeAddress, bool noCallback) external returns (uint256) {
         mustContainAddress(ISSUABLE_CONTRACTS);
         uint256 tid = _Storage().newTask(userAddress, action, cid, nodeAddress, noCallback);
         emit TaskIssued(nodeAddress, tid);
         emit TaskStatusChanged(tid, nodeAddress, action, DefaultStatus, TaskCreated);
+        _Node().taskIssuedCallback(nodeAddress, tid);
         return tid;
     }
 
@@ -138,10 +144,6 @@ contract Task is Importable, ExternalStorable, ITask {
 
     function getCurrentTid() external view returns (uint256) {
         return _Storage().getCurrentTid();
-    }
-
-    function getNodeMaxTid(address nodeAddress) external view returns (uint256) {
-        return _Storage().getNodeMaxTid(nodeAddress);
     }
 
     function isOver(uint256 tid) external view returns (bool) {

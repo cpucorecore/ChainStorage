@@ -92,10 +92,6 @@ describe("UserAction", function () {
     await chainStorage.connect(node3).nodeFinishTask(3, FileSize);
     await chainStorage.connect(node4).nodeFinishTask(4, FileSize);
     expect(await taskStorage.getCurrentTid()).to.equal(4);
-    expect(await taskStorage.getNodeMaxTid(node1Address)).to.equal(1);
-    expect(await taskStorage.getNodeMaxTid(node2Address)).to.equal(2);
-    expect(await taskStorage.getNodeMaxTid(node3Address)).to.equal(3);
-    expect(await taskStorage.getNodeMaxTid(node4Address)).to.equal(4);
     await dumpTask(1, 4);
     await dumpTaskState(1, 4);
     expect(await fileStorage.exist(cid)).to.equal(true);
@@ -130,10 +126,6 @@ describe("UserAction", function () {
     await chainStorage.connect(node3).nodeFinishTask(7, FileSize);
     await chainStorage.connect(node4).nodeFinishTask(8, FileSize);
     expect(await taskStorage.getCurrentTid()).to.equal(8);
-    expect(await taskStorage.getNodeMaxTid(node1Address)).to.equal(5);
-    expect(await taskStorage.getNodeMaxTid(node2Address)).to.equal(6);
-    expect(await taskStorage.getNodeMaxTid(node3Address)).to.equal(7);
-    expect(await taskStorage.getNodeMaxTid(node4Address)).to.equal(8);
     await dumpTask(5, 8);
     await dumpTaskState(5, 8);
     expect(await fileStorage.exist(cid)).to.equal(false);
@@ -166,10 +158,6 @@ describe("UserAction", function () {
     await chainStorage.connect(node3).nodeFinishTask(11, FileSize);
     await chainStorage.connect(node4).nodeFinishTask(12, FileSize);
     expect(await taskStorage.getCurrentTid()).to.equal(12);
-    expect(await taskStorage.getNodeMaxTid(node1Address)).to.equal(9);
-    expect(await taskStorage.getNodeMaxTid(node2Address)).to.equal(10);
-    expect(await taskStorage.getNodeMaxTid(node3Address)).to.equal(11);
-    expect(await taskStorage.getNodeMaxTid(node4Address)).to.equal(12);
     await dumpTask(9, 12);
     await dumpTaskState(9, 12);
     expect(await fileStorage.exist(cid)).to.equal(true);

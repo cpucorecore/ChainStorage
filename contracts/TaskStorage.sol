@@ -40,7 +40,6 @@ contract TaskStorage is ExternalStorage, ITaskStorage {
     mapping(uint256=>TaskItem) private tid2taskItem;
     mapping(uint256=>TaskState) private tid2taskState;
     mapping(uint256=>AddFileTaskProgress) private tid2addFileProgress;
-    mapping(address=>uint256) private node2nodeMaxTid;
     mapping(address=>EnumerableSet.Bytes32Set) private node2addingFileCidHashes;
     mapping(string=>EnumerableSet.AddressSet) private cid2addFileNodes;
 
@@ -62,8 +61,6 @@ contract TaskStorage is ExternalStorage, ITaskStorage {
             }
         }
 
-        node2nodeMaxTid[nodeAddress] = currentTid;
-
         return currentTid;
     }
 
@@ -78,10 +75,6 @@ contract TaskStorage is ExternalStorage, ITaskStorage {
 
     function getCurrentTid() external view returns (uint256) {
         return currentTid;
-    }
-
-    function getNodeMaxTid(address nodeAddress) external view returns (uint256) {
-        return node2nodeMaxTid[nodeAddress];
     }
 
     function isOver(uint256 tid) external view returns (bool) {

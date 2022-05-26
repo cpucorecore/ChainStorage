@@ -13,6 +13,14 @@ import {
   FileExt,
   Cid,
   FileSize,
+  Cids,
+  increaseTime,
+  AddFileTaskTimeout,
+  registerMoreNodesAndOnline,
+  monitors,
+  revertNodes,
+  nodeAddresses,
+  nodes,
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
 import { Signer } from "ethers";
@@ -22,7 +30,7 @@ describe("Node", function () {
   let nodeAddress: string;
 
   before(async () => {
-    await prepareContext(2, 0, 0, 0, 0, 1);
+    await prepareContext(2, 0, 0, 1, 1, 1);
 
     node = accounts[19];
     nodeAddress = await node.getAddress();
@@ -166,27 +174,36 @@ describe("Node", function () {
     );
   });
 
-  it("MaxFinishedTid should be 0", async function () {
-    expect(await nodeStorage.getMaxFinishedTid(nodeAddress)).to.equal(0);
+  it("should have no task", async function () {
+    expect(await nodeStorage.getTids(nodeAddress)).lengthOf(0);
     await chainStorage.connect(node).nodeRegister(NodeStorageTotal, NodeExt);
     await chainStorage.connect(node).nodeOnline();
-    expect(await nodeStorage.getMaxFinishedTid(nodeAddress)).to.equal(0);
+    expect(await nodeStorage.getTids(nodeAddress)).lengthOf(0);
   });
 
-  it("MaxFinishedTid should be right after finish task", async function () {
+  it("should have task after finish task", async function () {
     await chainStorage.connect(node).nodeRegister(NodeStorageTotal, NodeExt);
     await chainStorage.connect(node).nodeOnline();
-
     await chainStorage.connect(users[0]).userAddFile(Cid, Duration, FileExt);
+    expect(await nodeStorage.getTids(nodeAddress)).lengthOf(1);
+    // expect(await nodeStorage.getTids(nodeAddress)).to.contains(
+    //   BigNumber.from(1)
+    // ); // TODO fix
+    console.log(await nodeStorage.getTids(nodeAddress));
 
     await chainStorage.connect(node).nodeAcceptTask(1);
     await chainStorage.connect(node).nodeFinishTask(1, FileSize);
-    expect(await nodeStorage.getMaxFinishedTid(nodeAddress)).to.equal(1);
+    expect(await nodeStorage.getTids(nodeAddress)).lengthOf(0);
 
     await chainStorage.connect(users[0]).userDeleteFile(Cid);
+    expect(await nodeStorage.getTids(nodeAddress)).lengthOf(1);
+    // await expect(await nodeStorage.getTids(nodeAddress)).to.contains(
+    //   BigNumber.from(2)
+    // ); // TODO fix
+    console.log(await nodeStorage.getTids(nodeAddress));
     await chainStorage.connect(node).nodeAcceptTask(2);
     await chainStorage.connect(node).nodeFinishTask(2, FileSize);
-    expect(await nodeStorage.getMaxFinishedTid(nodeAddress)).to.equal(2);
+    expect(await nodeStorage.getTids(nodeAddress)).lengthOf(0);
   });
 
   it("all [online] node test", async function () {
@@ -305,5 +322,33 @@ describe("Node", function () {
 
   it("AddFileFailedCount should be 0", async function () {
     expect(await nodeStorage.getAddFileFailedCount(Cid)).to.equal(0);
+  });
+
+  it("node can online after task acceptTimeout", async function () {
+    await registerMoreNodesAndOnline(1);
+    await chainStorage
+      .connect(users[0])
+      .userAddFile(Cids[0], Duration, FileExt);
+    await increaseTime(AddFileTaskTimeout);
+    await registerMoreNodesAndOnline(1);
+    await chainStorage.connect(monitors[0]).monitorReportTaskAcceptTimeout(1);
+
+    expect(await nodeStorage.getStatus(nodeAddresses[0])).to.equal(4);
+    await chainStorage.connect(nodes[0]).nodeOnline();
+    await revertNodes();
+  });
+
+  it("node can online after task timeout", async function () {
+    await registerMoreNodesAndOnline(1);
+    await chainStorage
+      .connect(users[0])
+      .userAddFile(Cids[0], Duration, FileExt);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
+    await increaseTime(AddFileTaskTimeout);
+    await registerMoreNodesAndOnline(1);
+    await chainStorage.connect(monitors[0]).monitorReportTaskTimeout(1);
+
+    expect(await nodeStorage.getStatus(nodeAddresses[0])).to.equal(4);
+    await chainStorage.connect(nodes[0]).nodeOnline();
   });
 });

@@ -11,9 +11,10 @@ interface INodeStorage {
     function addOnlineNode(address nodeAddress) external;
     function deleteOnlineNode(address nodeAddress) external;
     function setStatus(address nodeAddress, uint256 status) external;
-    function setMaxFinishedTid(address nodeAddress, uint256 tid) external;
     function resetAddFileFailedCount(string calldata cid) external;
     function upAddFileFailedCount(string calldata cid) external returns (uint256);
+    function addTid(address nodeAddress, uint256 tid) external;
+    function removeTid(address nodeAddress, uint256 tid) external;
 
     // read functions
     function exist(address nodeAddress) external view returns (bool);
@@ -21,7 +22,6 @@ interface INodeStorage {
     function getStorageTotal(address nodeAddress) external view returns (uint256);
     function getStorageUsed(address nodeAddress) external view returns (uint256);
     function getStatus(address nodeAddress) external view returns (uint256);
-    function getMaxFinishedTid(address nodeAddress) external view returns (uint256);
     function getTotalNodeNumber() external view returns (uint256);
     function getTotalOnlineNodeNumber() external view returns (uint256);
     function getAllNodeAddresses() external view returns (address[] memory);
@@ -29,4 +29,5 @@ interface INodeStorage {
     function getAllOnlineNodeAddresses() external view returns (address[] memory);
     function getAllOnlineNodeAddresses(uint256 pageSize, uint256 pageNumber) external view returns (address[] memory, bool);
     function getAddFileFailedCount(string calldata cid) external view returns (uint256);
+    function getTids(address nodeAddress) external view returns (uint256[] memory);
 }

@@ -11,11 +11,11 @@ contract NodeStorage is ExternalStorage, INodeStorage {
     using StorageSpaceManager for StorageSpaceManager.StorageSpace;
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableSet for EnumerableSet.UintSet;
 
     struct NodeItem {
         uint256 status;
         StorageSpaceManager.StorageSpace storageSpace;
-        uint256 maxFinishedTid;
         string ext;
     }
 
@@ -23,13 +23,14 @@ contract NodeStorage is ExternalStorage, INodeStorage {
     EnumerableSet.AddressSet private nodeAddresses;
     EnumerableSet.AddressSet private onlineNodeAddresses;
     mapping(string=>uint256) private cid2addFileFailedCount;
+    mapping(address=>EnumerableSet.UintSet) private node2tids;
 
     constructor(address _manager) public ExternalStorage(_manager) {}
 
     // write functions
     function newNode(address nodeAddress, uint256 storageTotal, string calldata ext) external {
         mustManager(managerName);
-        nodes[nodeAddress] = NodeItem(NodeRegistered, StorageSpaceManager.StorageSpace(0, storageTotal), 0, ext);
+        nodes[nodeAddress] = NodeItem(NodeRegistered, StorageSpaceManager.StorageSpace(0, storageTotal), ext);
         nodeAddresses.add(nodeAddress);
     }
 
@@ -73,11 +74,6 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         nodes[nodeAddress].status = status;
     }
 
-    function setMaxFinishedTid(address nodeAddress, uint256 tid) external {
-        mustManager(managerName);
-        nodes[nodeAddress].maxFinishedTid = tid;
-    }
-
     function resetAddFileFailedCount(string calldata cid) external {
         mustManager(managerName);
         cid2addFileFailedCount[cid] = 0;
@@ -87,6 +83,16 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         mustManager(managerName);
         cid2addFileFailedCount[cid] = cid2addFileFailedCount[cid].add(1);
         return cid2addFileFailedCount[cid];
+    }
+
+    function addTid(address nodeAddress, uint256 tid) external {
+        mustManager(managerName);
+        node2tids[nodeAddress].add(tid);
+    }
+
+    function removeTid(address nodeAddress, uint256 tid) external {
+        mustManager(managerName);
+        node2tids[nodeAddress].remove(tid);
     }
 
     // read functions
@@ -108,10 +114,6 @@ contract NodeStorage is ExternalStorage, INodeStorage {
 
     function getStatus(address nodeAddress) external view returns (uint256) {
         return nodes[nodeAddress].status;
-    }
-
-    function getMaxFinishedTid(address nodeAddress) external view returns (uint256) {
-        return nodes[nodeAddress].maxFinishedTid;
     }
 
     function getTotalNodeNumber() external view returns (uint256) {
@@ -152,5 +154,9 @@ contract NodeStorage is ExternalStorage, INodeStorage {
 
     function getAddFileFailedCount(string calldata cid) external view returns (uint256) {
         return cid2addFileFailedCount[cid];
+    }
+
+    function getTids(address nodeAddress) external view returns (uint256[] memory) {
+        return node2tids[nodeAddress].values();
     }
 }

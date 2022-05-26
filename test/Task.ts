@@ -59,45 +59,6 @@ describe("Task", function () {
     expect(await taskStorage.getCurrentTid()).to.equal(3);
   });
 
-  it("nodeMaxTid should be 0", async function () {
-    expect(await taskStorage.getNodeMaxTid(nodeAddresses[0])).to.equal(0);
-    expect(await taskStorage.getNodeMaxTid(nodeAddresses[1])).to.equal(0);
-  });
-
-  it("nodeMaxTid should update after user addFile", async function () {
-    await chainStorage.connect(user).userAddFile(Cids[0], Duration, FileExt);
-    expect(await taskStorage.getNodeMaxTid(nodeAddresses[0])).to.equal(1);
-    expect(await taskStorage.getNodeMaxTid(nodeAddresses[1])).to.equal(2);
-    await chainStorage.connect(user).userAddFile(Cids[1], Duration, FileExt);
-    expect(await taskStorage.getNodeMaxTid(nodeAddresses[0])).to.equal(3);
-    expect(await taskStorage.getNodeMaxTid(nodeAddresses[1])).to.equal(4);
-  });
-
-  it("nodeMaxTid should update after user deleteFile", async function () {
-    await chainStorage.connect(user).userAddFile(Cids[0], Duration, FileExt);
-    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
-    await chainStorage.connect(nodes[0]).nodeFinishTask(1, FileSize);
-    await chainStorage.connect(user).userDeleteFile(Cids[0]);
-    expect(await taskStorage.getNodeMaxTid(nodeAddresses[0])).to.equal(3);
-    expect(await taskStorage.getNodeMaxTid(nodeAddresses[1])).to.equal(2);
-  });
-
-  it.skip("TODO fix", async function () {
-    await chainStorage.connect(user).userAddFile(Cids[0], Duration, FileExt);
-    await increaseTime(AddFileTaskTimeout);
-    await registerMoreNodesAndOnline(1);
-
-    await chainStorage.connect(monitors[0]).monitorReportTaskAcceptTimeout(1);
-    expect(await taskStorage.getNodeMaxTid(nodeAddresses[0])).to.equal(1);
-    expect(await taskStorage.getNodeMaxTid(nodeAddresses[1])).to.equal(2);
-    expect(await taskStorage.getNodeMaxTid(nodeAddresses[2])).to.equal(3);
-
-    expect(await nodeStorage.getStatus(nodeAddresses[0])).to.equal(4);
-    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
-    await chainStorage.connect(nodes[0]).nodeFinishTask(1, FileSize);
-    await chainStorage.connect(nodes[0]).nodeOnline();
-  });
-
   it("should fail to finishTask for not acceptTask first", async function () {
     await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
     await expect(
