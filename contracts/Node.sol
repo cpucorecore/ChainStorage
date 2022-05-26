@@ -133,7 +133,7 @@ contract Node is Importable, ExternalStorable, INode {
             _Storage().useStorage(nodeAddress, size);
             _Storage().resetAddFileFailedCount(cid);
         } else if(Delete == action) {
-            _Storage().freeStorage(nodeAddress, _File().getSize(cid)); // this must done before next code, for _File().getSize(cid) may 0
+            _Storage().freeStorage(nodeAddress, _File().getSize(cid));
             if(!noCallback) {
                 _File().onNodeDeleteFileFinish(nodeAddress, userAddress, cid);
             }
