@@ -26,10 +26,7 @@ contract NodeStorage is ExternalStorage, INodeStorage {
 
     constructor(address _manager) public ExternalStorage(_manager) {}
 
-    function exist(address nodeAddress) public view returns (bool) {
-        return DefaultStatus != nodes[nodeAddress].status;
-    }
-
+    // write functions
     function newNode(address nodeAddress, uint256 storageTotal, string calldata ext) external {
         mustManager(managerName);
         nodes[nodeAddress] = NodeItem(NodeRegistered, StorageSpaceManager.StorageSpace(0, storageTotal), 0, ext);
@@ -43,16 +40,22 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         onlineNodeAddresses.remove(nodeAddress);
     }
 
+    function setStorageTotal(address nodeAddress, uint256 value) external {
+        mustManager(managerName);
+        nodes[nodeAddress].storageSpace.total = value;
+    }
+
+    function setExt(address nodeAddress, string calldata ext) external {
+        mustManager(managerName);
+        nodes[nodeAddress].ext = ext;
+    }
+
     function useStorage(address nodeAddress, uint256 size) external {
         nodes[nodeAddress].storageSpace.useSpace(size);
     }
 
     function freeStorage(address nodeAddress, uint256 size) external {
         nodes[nodeAddress].storageSpace.unUseSpace(size);
-    }
-
-    function isNodeOnline(address nodeAddress) external view returns (bool) {
-        return onlineNodeAddresses.contains(nodeAddress);
     }
 
     function addOnlineNode(address nodeAddress) external {
@@ -65,12 +68,9 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         onlineNodeAddresses.remove(nodeAddress);
     }
 
-    function getStorageSpace(address nodeAddress) public view returns (uint256, uint256) {
-        return (nodes[nodeAddress].storageSpace.used, nodes[nodeAddress].storageSpace.total);
-    }
-
-    function getMaxFinishedTid(address nodeAddress) external view returns (uint256) {
-        return nodes[nodeAddress].maxFinishedTid;
+    function setStatus(address nodeAddress, uint256 status) external {
+        mustManager(managerName);
+        nodes[nodeAddress].status = status;
     }
 
     function setMaxFinishedTid(address nodeAddress, uint256 tid) external {
@@ -78,39 +78,48 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         nodes[nodeAddress].maxFinishedTid = tid;
     }
 
-    function getStatus(address nodeAddress) external view returns (uint256) {
-        return nodes[nodeAddress].status;
-    }
-
-    function setStatus(address nodeAddress, uint256 status) external {
+    function resetAddFileFailedCount(string calldata cid) external {
         mustManager(managerName);
-        nodes[nodeAddress].status = status;
+        cid2addFileFailedCount[cid] = 0;
     }
 
-    function availableSpace(address nodeAddress) external view returns (uint256) {
-        return nodes[nodeAddress].storageSpace.availableSpace();
-    }
-
-    function getStorageTotal(address nodeAddress) external view returns (uint256) {
-        return nodes[nodeAddress].storageSpace.total;
-    }
-
-    function setStorageTotal(address nodeAddress, uint256 value) external {
+    function upAddFileFailedCount(string calldata cid) external returns (uint256) {
         mustManager(managerName);
-        nodes[nodeAddress].storageSpace.total = value;
+        cid2addFileFailedCount[cid] = cid2addFileFailedCount[cid].add(1);
+        return cid2addFileFailedCount[cid];
     }
 
-    function getStorageUsed(address nodeAddress) external view returns (uint256) {
-        return nodes[nodeAddress].storageSpace.used;
+    // read functions
+    function exist(address nodeAddress) public view returns (bool) {
+        return DefaultStatus != nodes[nodeAddress].status;
     }
 
     function getExt(address nodeAddress) external view returns (string memory) {
         return nodes[nodeAddress].ext;
     }
 
-    function setExt(address nodeAddress, string calldata ext) external {
-        mustManager(managerName);
-        nodes[nodeAddress].ext = ext;
+    function getStorageTotal(address nodeAddress) external view returns (uint256) {
+        return nodes[nodeAddress].storageSpace.total;
+    }
+
+    function getStorageUsed(address nodeAddress) external view returns (uint256) {
+        return nodes[nodeAddress].storageSpace.used;
+    }
+
+    function getStatus(address nodeAddress) external view returns (uint256) {
+        return nodes[nodeAddress].status;
+    }
+
+    function getMaxFinishedTid(address nodeAddress) external view returns (uint256) {
+        return nodes[nodeAddress].maxFinishedTid;
+    }
+
+    function getTotalNodeNumber() external view returns (uint256) {
+        return nodeAddresses.length();
+    }
+
+    function getTotalOnlineNodeNumber() external view returns (uint256) {
+        return onlineNodeAddresses.length();
     }
 
     function getAllNodeAddresses() public view returns (address[] memory) {
@@ -143,24 +152,5 @@ contract NodeStorage is ExternalStorage, INodeStorage {
 
     function getAddFileFailedCount(string calldata cid) external view returns (uint256) {
         return cid2addFileFailedCount[cid];
-    }
-
-    function resetAddFileFailedCount(string calldata cid) external {
-        mustManager(managerName);
-        cid2addFileFailedCount[cid] = 0;
-    }
-
-    function upAddFileFailedCount(string calldata cid) external returns (uint256) {
-        mustManager(managerName);
-        cid2addFileFailedCount[cid] = cid2addFileFailedCount[cid].add(1);
-        return cid2addFileFailedCount[cid];
-    }
-
-    function getTotalNodeNumber() external view returns (uint256) {
-        return nodeAddresses.length();
-    }
-
-    function getTotalOnlineNodeNumber() external view returns (uint256) {
-        return onlineNodeAddresses.length();
     }
 }

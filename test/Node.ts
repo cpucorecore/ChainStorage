@@ -79,19 +79,18 @@ describe("Node", function () {
   });
 
   it("storage", async function () {
-    let storageSpace = await nodeStorage.getStorageSpace(nodeAddress);
-    assert.equal(storageSpace[0].toNumber(), 0);
-    assert.equal(storageSpace[1].toNumber(), 0);
+    expect(await nodeStorage.getStorageUsed(nodeAddress)).to.equal(0);
+    expect(await nodeStorage.getStorageTotal(nodeAddress)).to.equal(0);
 
     await chainStorage.connect(node).nodeRegister(NodeStorageTotal, NodeExt);
-    storageSpace = await nodeStorage.getStorageSpace(nodeAddress);
-    assert.equal(storageSpace[0].toNumber(), 0);
-    assert.equal(storageSpace[1].toNumber(), NodeStorageTotal);
+    expect(await nodeStorage.getStorageUsed(nodeAddress)).to.equal(0);
+    expect(await nodeStorage.getStorageTotal(nodeAddress)).to.equal(
+      NodeStorageTotal
+    );
 
     await chainStorage.connect(node).nodeDeRegister();
-    storageSpace = await nodeStorage.getStorageSpace(nodeAddress);
-    assert.equal(storageSpace[0].toNumber(), 0);
-    assert.equal(storageSpace[1].toNumber(), 0);
+    expect(await nodeStorage.getStorageUsed(nodeAddress)).to.equal(0);
+    expect(await nodeStorage.getStorageTotal(nodeAddress)).to.equal(0);
   });
 
   it("all [online] node test", async function () {

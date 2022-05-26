@@ -83,7 +83,7 @@ contract Node is Importable, ExternalStorable, INode {
 
         uint256 maxFinishedTid = _Storage().getMaxFinishedTid(nodeAddress);
         uint256 nodeMaxTid = _Task().getNodeMaxTid(nodeAddress);
-        require(nodeMaxTid == maxFinishedTid, "N:task not finish");
+        require(nodeMaxTid == maxFinishedTid, "N:can't online before finish all tasks");
 
         _Storage().setStatus(nodeAddress, NodeOnline);
         _Storage().addOnlineNode(nodeAddress);
@@ -126,7 +126,7 @@ contract Node is Importable, ExternalStorable, INode {
         mustAddress(CONTRACT_CHAIN_STORAGE);
 
         (address userAddress, uint256 action, address _nodeAddress, bool noCallback, string memory cid) = _Task().getTask(tid);
-        require(nodeAddress == _nodeAddress, "N:node have no this task");
+        require(nodeAddress == _nodeAddress, "N:node have not this task");
 
         if(Add == action) {
             _File().onNodeAddFileFinish(nodeAddress, userAddress, cid, size);
@@ -139,8 +139,8 @@ contract Node is Importable, ExternalStorable, INode {
             }
         }
 
-        uint256 currentTid = _Storage().getMaxFinishedTid(nodeAddress);
-        if(tid > currentTid) {
+        uint256 maxFinishedTid = _Storage().getMaxFinishedTid(nodeAddress);
+        if(tid > maxFinishedTid) {
             _Storage().setMaxFinishedTid(nodeAddress, tid);
         }
 
@@ -151,7 +151,7 @@ contract Node is Importable, ExternalStorable, INode {
         mustAddress(CONTRACT_CHAIN_STORAGE);
 
         (address userAddress, uint256 action, address _nodeAddress, , string memory cid) = _Task().getTask(tid);
-        require(nodeAddress == _nodeAddress, "N:node have no this task");
+        require(nodeAddress == _nodeAddress, "N:node have not this task");
         require(Add == action, "N:only Add can fail");
 
         uint256 maxAddFileFailedCount = _Setting().getMaxAddFileFailedCount();
