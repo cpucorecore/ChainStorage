@@ -237,6 +237,34 @@ export async function prepareContext(
   }
 }
 
+let _nodeNumber: any = 0;
+export async function registerMoreNodesAndOnline(nodeNumber: any) {
+  if (nodes.length + nodeNumber > accounts.length) {
+    nodeNumber = accounts.length - nodes.length;
+  }
+  if (nodeNumber === 0) return;
+  _nodeNumber = nodeNumber;
+
+  const from = accounts.length - nodes.length - 1; // from > to
+  const to = from - nodeNumber + 1;
+
+  for (let i = from; i >= to; i--) {
+    const node = accounts[i];
+    const nodeAddress = await node.getAddress();
+    nodes.push(node);
+    nodeAddresses.push(nodeAddress);
+    await chainStorage.connect(node).nodeRegister(NodeStorageTotal, NodeExt);
+    await chainStorage.connect(node).nodeOnline();
+  }
+}
+
+export async function revertNodes() {
+  for (let i = 0; i < _nodeNumber; i++) {
+    nodes.pop();
+    nodeAddresses.pop();
+  }
+}
+
 export const increaseTime = async (seconds: number) => {
   await ethers.provider.send("evm_increaseTime", [seconds]);
   await ethers.provider.send("evm_mine", []);

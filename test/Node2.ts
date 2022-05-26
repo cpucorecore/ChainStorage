@@ -8,12 +8,10 @@ import {
   nodes,
   takeSnapshot,
   revertToSnapshot,
-  accounts,
   users,
   FileSize,
-  NodeStorageTotal,
-  NodeExt,
   nodeStorage,
+  registerMoreNodesAndOnline, revertNodes
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
 
@@ -30,26 +28,6 @@ describe("Node2", function () {
     await revertToSnapshot();
   });
 
-  async function register4Nodes() {
-    await chainStorage
-      .connect(accounts[14])
-      .nodeRegister(NodeStorageTotal, NodeExt);
-    await chainStorage
-      .connect(accounts[13])
-      .nodeRegister(NodeStorageTotal, NodeExt);
-    await chainStorage
-      .connect(accounts[12])
-      .nodeRegister(NodeStorageTotal, NodeExt);
-    await chainStorage
-      .connect(accounts[11])
-      .nodeRegister(NodeStorageTotal, NodeExt);
-
-    await chainStorage.connect(accounts[14]).nodeOnline();
-    await chainStorage.connect(accounts[13]).nodeOnline();
-    await chainStorage.connect(accounts[12]).nodeOnline();
-    await chainStorage.connect(accounts[11]).nodeOnline();
-  }
-
   it("AddFileFailedCount", async function () {
     const user = users[0];
     await chainStorage.connect(user).userAddFile(Cids[0], Duration, FileExt);
@@ -64,7 +42,7 @@ describe("Node2", function () {
     await chainStorage.connect(nodes[2]).nodeAcceptTask(8);
     await chainStorage.connect(nodes[3]).nodeAcceptTask(9);
     await chainStorage.connect(nodes[4]).nodeAcceptTask(10);
-    await register4Nodes();
+    await registerMoreNodesAndOnline(4);
 
     await chainStorage.connect(nodes[0]).nodeFailTask(1);
     expect(await nodeStorage.getAddFileFailedCount(Cids[0])).to.equal(1);
@@ -86,5 +64,7 @@ describe("Node2", function () {
     await chainStorage.connect(nodes[4]).nodeFailTask(5);
     expect(await nodeStorage.getAddFileFailedCount(Cids[0])).to.equal(1);
     expect(await nodeStorage.getAddFileFailedCount(Cids[1])).to.equal(1);
+
+    await revertNodes();
   });
 });

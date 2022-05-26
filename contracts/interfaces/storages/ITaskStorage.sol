@@ -1,13 +1,11 @@
 pragma solidity ^0.5.2;
 
 interface ITaskStorage {
-    function getCurrentTid() external view returns (uint256);
-
     function newTask(address userAddress, uint256 action, string calldata cid, address nodeAddress, bool noCallback) external returns (uint256);
     function setStatusAndTime(uint256 tid, uint256 status, uint256 time) external;
 
     function exist(uint256 tid) external view returns (bool);
-
+    function getCurrentTid() external view returns (uint256);
     function getNodeMaxTid(address nodeAddress) external view returns (uint256);
     function isOver(uint256 tid) external view returns (bool);
     function isNodeDoingAddFile(address nodeAddress, string calldata cid) external view returns (bool);

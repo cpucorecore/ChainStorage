@@ -132,16 +132,16 @@ contract Task is Importable, ExternalStorable, ITask {
         require(_Storage().exist(tid), "T:task not exist");
     }
 
+    function exist(uint256 tid) external view returns (bool) {
+        return _Storage().exist(tid);
+    }
+
     function getCurrentTid() external view returns (uint256) {
         return _Storage().getCurrentTid();
     }
 
     function getNodeMaxTid(address nodeAddress) external view returns (uint256) {
         return _Storage().getNodeMaxTid(nodeAddress);
-    }
-
-    function exist(uint256 tid) external view returns (bool) {
-        return _Storage().exist(tid);
     }
 
     function isOver(uint256 tid) external view returns (bool) {

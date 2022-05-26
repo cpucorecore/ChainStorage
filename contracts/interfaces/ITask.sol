@@ -10,9 +10,9 @@ interface ITask {
     function reportAddFileProgressBySize(address nodeAddress, uint256 tid, uint256 size) external;
     function reportAddFileProgressByPercentage(address nodeAddress, uint256 tid, uint256 percentage) external;
 
+    function exist(uint256 tid) external view returns (bool);
     function getCurrentTid() external view returns (uint256);
     function getNodeMaxTid(address nodeAddress) external view returns (uint256);
-    function exist(uint256 tid) external view returns (bool);
     function isOver(uint256 tid) external view returns (bool);
     function isNodeDoingAddFile(address nodeAddress, string calldata cid) external view returns (bool);
     function getTask(uint256 tid) external view returns (address, uint256, address, bool, string memory);
