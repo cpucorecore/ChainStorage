@@ -30,5 +30,5 @@ interface INodeStorage {
     function getAllOnlineNodeAddresses(uint256 pageSize, uint256 pageNumber) external view returns (address[] memory, bool);
     function getAddFileFailedCount(string calldata cid) external view returns (uint256);
     function getTasks(address nodeAddress) external view returns (uint256[] memory);
-    function currentTask(address nodeAddress) external view returns (uint256);
+    function firstTaskInTaskQueue(address nodeAddress) external view returns (uint256);
 }

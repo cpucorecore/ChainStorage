@@ -166,7 +166,7 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         return result;
     }
 
-    function currentTask(address nodeAddress) external view returns (uint256) {
+    function firstTaskInTaskQueue(address nodeAddress) external view returns (uint256) {
         return node2taskQueue[nodeAddress].front();
     }
 }

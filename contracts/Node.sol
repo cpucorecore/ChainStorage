@@ -123,7 +123,7 @@ contract Node is Importable, ExternalStorable, INode {
 
     function finishTask(address nodeAddress, uint256 tid, uint256 size) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
-        require(_Storage().currentTask(nodeAddress) == tid, "N:must do task by queue");
+        require(_Storage().firstTaskInTaskQueue(nodeAddress) == tid, "N:must do task by queue");
         (address userAddress, uint256 action,,bool noCallback, string memory cid) = _Task().getTask(tid);
 
         if(Add == action) {
@@ -137,25 +137,27 @@ contract Node is Importable, ExternalStorable, INode {
             }
         }
 
-        _Storage().popTaskFront(nodeAddress);
-
         _Task().finishTask(nodeAddress, tid);
+        _Storage().popTaskFront(nodeAddress);
     }
 
     function failTask(address nodeAddress, uint256 tid) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
-        require(_Storage().currentTask(nodeAddress) == tid, "N:must do task by queue");
+        require(_Storage().firstTaskInTaskQueue(nodeAddress) == tid, "N:must do task by queue");
         (address userAddress, uint256 action,,,string memory cid) = _Task().getTask(tid);
 
         uint256 maxAddFileFailedCount = _Setting().getMaxAddFileFailedCount();
         uint256 addFileFailedCount = _Storage().upAddFileFailedCount(cid);
+        if(Add == action) {
+            _Storage().popTaskFront(nodeAddress);
+        }
+
         if(addFileFailedCount >= maxAddFileFailedCount) {
             _File().onAddFileFail(userAddress, cid);
             return;
         }
 
         if(Add == action) {
-            _Storage().popTaskFront(nodeAddress);
             if(_File().getNodeNumber(cid) < _Setting().getReplica()) {
                 _retryAddFileTask(userAddress, cid, nodeAddress);
             }
@@ -167,7 +169,7 @@ contract Node is Importable, ExternalStorable, INode {
     function reportAcceptTaskTimeout(uint256 tid) external {
         mustAddress(CONTRACT_MONITOR);
         (address userAddress, uint256 action, address nodeAddress, , string memory cid) = _Task().getTask(tid);
-        require(_Storage().currentTask(nodeAddress) == tid, "N:must do task by queue");
+        require(_Storage().firstTaskInTaskQueue(nodeAddress) == tid, "N:must do task by queue");
         _offline(nodeAddress);
         _Task().acceptTaskTimeout(tid);
         if(Add == action) {
@@ -181,7 +183,7 @@ contract Node is Importable, ExternalStorable, INode {
     function reportTaskTimeout(uint256 tid) external {
         mustAddress(CONTRACT_MONITOR);
         (address userAddress, uint256 action, address nodeAddress, , string memory cid) = _Task().getTask(tid);
-        require(_Storage().currentTask(nodeAddress) == tid, "N:must do task by queue");
+        require(_Storage().firstTaskInTaskQueue(nodeAddress) == tid, "N:must do task by queue");
         _offline(nodeAddress);
         _Task().taskTimeout(tid);
 

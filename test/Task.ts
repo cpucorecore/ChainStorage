@@ -96,7 +96,7 @@ describe("Task", function () {
     await chainStorage.connect(nodes[0]).nodeFinishTask(1, FileSize);
     await expect(
       chainStorage.connect(nodes[0]).nodeFinishTask(1, FileSize)
-    ).to.revertedWith("T:task status is not Accepted");
+    ).to.revertedWith("dq:empty");
   });
 
   it("deleteFile task should not fail", async function () {
