@@ -12,6 +12,13 @@ import {
   nodes,
   FileSize,
   Cids,
+  registerMoreNodesAndOnline,
+  revertNodes,
+  monitors,
+  increaseTime,
+  TaskAcceptTimeout,
+  AddFileTaskTimeout,
+  DeleteFileTaskTimeout,
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
 import { Signer } from "ethers";
@@ -32,11 +39,19 @@ describe("Task", function () {
     await revertToSnapshot();
   });
 
-  it("exist", async function () {
+  it("should exist after user addFile", async function () {
     expect(await taskStorage.exist(1)).to.equal(false);
     await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
     expect(await taskStorage.exist(1)).to.equal(true);
     expect(await taskStorage.exist(2)).to.equal(true);
+  });
+
+  it("should exist after user deleteFile", async function () {
+    await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
+    await chainStorage.connect(nodes[0]).nodeFinishTask(1, FileSize);
+    await chainStorage.connect(user).userDeleteFile(Cid);
+    expect(await taskStorage.exist(3)).to.equal(true);
   });
 
   it("currentTid should be 0", async function () {
@@ -93,5 +108,80 @@ describe("Task", function () {
     await expect(
       chainStorage.connect(nodes[0]).nodeFailTask(3)
     ).to.revertedWith("T:only add file task can fail");
+  });
+
+  it("add file task should isOver after finish task", async function () {
+    await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
+    expect(await taskStorage.isOver(1)).to.equal(false);
+    await chainStorage.connect(nodes[0]).nodeFinishTask(1, FileSize);
+    expect(await taskStorage.isOver(1)).to.equal(true);
+  });
+
+  it("add file task should isOver after fail task", async function () {
+    await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
+    await registerMoreNodesAndOnline(1);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
+    expect(await taskStorage.isOver(1)).to.equal(false);
+    await chainStorage.connect(nodes[0]).nodeFailTask(1);
+    expect(await taskStorage.isOver(1)).to.equal(true);
+    await revertNodes();
+  });
+
+  it("add file task should isOver after accept task timeout", async function () {
+    await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
+    await registerMoreNodesAndOnline(1);
+    expect(await taskStorage.isOver(1)).to.equal(false);
+    await increaseTime(TaskAcceptTimeout);
+    await chainStorage.connect(monitors[0]).monitorReportTaskAcceptTimeout(1);
+    expect(await taskStorage.isOver(1)).to.equal(true);
+    await revertNodes();
+  });
+
+  it("add file task should isOver after task timeout", async function () {
+    await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
+    await registerMoreNodesAndOnline(1);
+    expect(await taskStorage.isOver(1)).to.equal(false);
+    await increaseTime(AddFileTaskTimeout);
+    await chainStorage.connect(monitors[0]).monitorReportTaskTimeout(1);
+    expect(await taskStorage.isOver(1)).to.equal(true);
+    await revertNodes();
+  });
+
+  it("delete file task should isOver after finish task", async function () {
+    await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
+    await chainStorage.connect(nodes[0]).nodeFinishTask(1, FileSize);
+    await chainStorage.connect(user).userDeleteFile(Cid);
+    expect(await taskStorage.isOver(3)).to.equal(false);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(3);
+    await chainStorage.connect(nodes[0]).nodeFinishTask(3, FileSize);
+    expect(await taskStorage.isOver(1)).to.equal(true);
+  });
+
+  it("delete file task should not isOver after accept task timeout", async function () {
+    await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
+    await chainStorage.connect(nodes[0]).nodeFinishTask(1, FileSize);
+    await chainStorage.connect(user).userDeleteFile(Cid);
+    await registerMoreNodesAndOnline(1);
+    await increaseTime(TaskAcceptTimeout);
+    await chainStorage.connect(monitors[0]).monitorReportTaskAcceptTimeout(3);
+    expect(await taskStorage.isOver(3)).to.equal(false);
+    await revertNodes();
+  });
+
+  it("delete file task should not isOver after task timeout", async function () {
+    await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
+    await chainStorage.connect(nodes[0]).nodeFinishTask(1, FileSize);
+    await chainStorage.connect(user).userDeleteFile(Cid);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(3);
+    await registerMoreNodesAndOnline(1);
+    await increaseTime(DeleteFileTaskTimeout);
+    await chainStorage.connect(monitors[0]).monitorReportTaskTimeout(3);
+    expect(await taskStorage.isOver(3)).to.equal(false);
+    await revertNodes();
   });
 });
