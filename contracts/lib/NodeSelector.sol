@@ -75,7 +75,7 @@ library NodeSelector {
                 notExist = false;
             }
 
-            if(_Task(taskAddress).isNodeDoingAddFile(allOnlineNodeAddresses[i], cid)) {
+            if(_Task(taskAddress).isNodeAddFileCidDuplicated(allOnlineNodeAddresses[i], cid)) {
                 notExist = false;
             }
 

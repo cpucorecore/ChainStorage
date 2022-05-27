@@ -184,22 +184,22 @@ describe("UserAction", function () {
   });
 
   it("user random operations 2", async function () {
-    // user1.addFile(cid1)
+    // user1.addFile(cid)
     await chainStorage.connect(user1).userAddFile(cid, Duration, FileExt);
-    // node1 finish addFile(cid1)
+    // node1 finish addFile(cid)
     await chainStorage.connect(node1).nodeAcceptTask(1);
     await chainStorage.connect(node1).nodeFinishTask(1, FileSize);
-    // user2.deleteFile(cid1)
+    // user1.deleteFile(cid)
     await chainStorage.connect(user1).userDeleteFile(cid);
-    // node1 finish deleteFile(cid1)
+    // node1 finish deleteFile(cid)
     await chainStorage.connect(node1).nodeAcceptTask(5);
     await chainStorage.connect(node1).nodeFinishTask(5, FileSize);
-    // node2/node3 finish addFile(cid1)
+    // node2/node3 finish addFile(cid)
     await chainStorage.connect(node2).nodeAcceptTask(2);
     await chainStorage.connect(node2).nodeFinishTask(2, FileSize);
     await chainStorage.connect(node3).nodeAcceptTask(3);
     await chainStorage.connect(node3).nodeFinishTask(3, FileSize);
-    // user2.addFile(cid1)
+    // user2.addFile(cid)
     await chainStorage.connect(user2).userAddFile(cid, Duration, FileExt);
     await chainStorage.connect(node2).nodeAcceptTask(6);
     await chainStorage.connect(node2).nodeFinishTask(6, FileSize);
@@ -229,7 +229,7 @@ describe("UserAction", function () {
     await dumpFile(cid);
   });
 
-  it("user random operations 2", async function () {
+  it("user random operations 3", async function () {
     await chainStorage.connect(user1).userAddFile(cid, Duration, FileExt);
     await chainStorage.connect(node1).nodeAcceptTask(1);
     await chainStorage.connect(node1).nodeFinishTask(1, FileSize);

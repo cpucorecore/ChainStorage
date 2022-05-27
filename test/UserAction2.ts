@@ -73,7 +73,7 @@ describe("UserAction2", function () {
     await chainStorage.connect(node5).nodeOnline();
   }
 
-  it("user random operations 3", async function () {
+  it("user random operations 4", async function () {
     // user1.addFile(cid)
     await chainStorage.connect(user1).userAddFile(cid, Duration, FileExt);
     await node5RegisterAndOnline();
@@ -114,7 +114,7 @@ describe("UserAction2", function () {
     await dumpFile(cid);
   });
 
-  it("user random operations 4", async function () {
+  it("user random operations 5", async function () {
     // user1.addFile
     await chainStorage.connect(user1).userAddFile(cid, Duration, FileExt);
     // node5 online

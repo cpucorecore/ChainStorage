@@ -40,7 +40,7 @@ contract TaskStorage is ExternalStorage, ITaskStorage {
     mapping(uint256=>TaskItem) private tid2taskItem;
     mapping(uint256=>TaskState) private tid2taskState;
     mapping(uint256=>AddFileTaskProgress) private tid2addFileProgress;
-    mapping(address=>EnumerableSet.Bytes32Set) private node2addingFileCidHashes;
+    mapping(address=>EnumerableSet.Bytes32Set) private node2addFileCidHashes;
     mapping(string=>EnumerableSet.AddressSet) private cid2addFileNodes;
 
     constructor(address _manager) public ExternalStorage(_manager) {}
@@ -55,7 +55,7 @@ contract TaskStorage is ExternalStorage, ITaskStorage {
             tid2addFileProgress[currentTid] = AddFileTaskProgress(0, 0, 0, 0, 0, 0);
 
             bytes32 cidHash = keccak256(bytes(cid));
-            node2addingFileCidHashes[nodeAddress].add(cidHash);
+            node2addFileCidHashes[nodeAddress].add(cidHash);
             if(!cid2addFileNodes[cid].contains(nodeAddress)) {
                 cid2addFileNodes[cid].add(nodeAddress);
             }
@@ -88,8 +88,8 @@ contract TaskStorage is ExternalStorage, ITaskStorage {
         return over;
     }
 
-    function isNodeDoingAddFile(address nodeAddress, string calldata cid) external view returns (bool) {
-        return node2addingFileCidHashes[nodeAddress].contains(keccak256(bytes(cid)));
+    function isNodeAddFileCidDuplicated(address nodeAddress, string calldata cid) external view returns (bool) {
+        return node2addFileCidHashes[nodeAddress].contains(keccak256(bytes(cid)));
     }
 
     function getAddFileNodes(string calldata cid) external view returns (address[] memory nodeAddresses) {
@@ -97,7 +97,7 @@ contract TaskStorage is ExternalStorage, ITaskStorage {
     }
 
     function getAddFileCidHashes(address nodeAddress) external view returns (bytes32[] memory cidHashes) {
-        return node2addingFileCidHashes[nodeAddress].values();
+        return node2addFileCidHashes[nodeAddress].values();
     }
 
     function getTaskState(uint256 tid) external view returns (uint256, uint256, uint256, uint256, uint256, uint256, uint256, uint256) {
@@ -149,7 +149,7 @@ contract TaskStorage is ExternalStorage, ITaskStorage {
         TaskItem storage task = tid2taskItem[tid];
         if(Add == task.action && TaskAccepted != status) {
             bytes32 cidHash = keccak256(bytes(task.cid));
-            node2addingFileCidHashes[task.node].remove(cidHash);
+            node2addFileCidHashes[task.node].remove(cidHash);
             cid2addFileNodes[task.cid].remove(task.node);
         }
     }
