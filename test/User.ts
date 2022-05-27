@@ -14,6 +14,8 @@ import {
   UserExt,
   UserStorageTotal,
   deployer,
+  Cid,
+  FileSize,
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
 import { Signer } from "ethers";
@@ -61,12 +63,114 @@ describe("User", function () {
     expect(await userStorage.getExt(userAddress)).to.equal("");
   });
 
-  it("storage", async function () {
-    expect(await userStorage.getStorageUsed(userAddress)).to.equal(0);
+  it("file ext test", async function () {
+    const user1 = accounts[0];
+    const user2 = accounts[1];
+    const user1Address = accountAddresses[0];
+    const user2Address = accountAddresses[1];
+
+    await chainStorage.connect(user1).userRegister(UserExt);
+    await chainStorage.connect(user2).userRegister(UserExt);
+
+    const user1CidExt = "user1CidExt";
+    const user2CidExt = "user2CidExt";
+    const user1NewCidExt = "user1NewCidExt";
+    const user2NewCidExt = "user2NewCidExt";
+
+    await chainStorage.connect(user1).userAddFile(Cid, Duration, user1CidExt);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
+    await chainStorage.connect(nodes[0]).nodeFinishTask(1, FileSize);
+    expect(await userStorage.getFileExt(user1Address, Cid)).to.equal(
+      user1CidExt
+    );
+
+    await chainStorage.connect(user2).userAddFile(Cid, Duration, user2CidExt);
+    expect(await userStorage.getFileExt(user1Address, Cid)).to.equal(
+      user1CidExt
+    );
+    expect(await userStorage.getFileExt(user2Address, Cid)).to.equal(
+      user2CidExt
+    );
+
+    await chainStorage.connect(user1).userSetFileExt(Cid, user1NewCidExt);
+    expect(await userStorage.getFileExt(user1Address, Cid)).to.equal(
+      user1NewCidExt
+    );
+    expect(await userStorage.getFileExt(user2Address, Cid)).to.equal(
+      user2CidExt
+    );
+
+    await chainStorage.connect(user2).userSetFileExt(Cid, user2NewCidExt);
+    expect(await userStorage.getFileExt(user1Address, Cid)).to.equal(
+      user1NewCidExt
+    );
+    expect(await userStorage.getFileExt(user2Address, Cid)).to.equal(
+      user2NewCidExt
+    );
+  });
+
+  it("file duration test", async function () {
+    const user1 = accounts[0];
+    const user2 = accounts[1];
+    const user1Address = accountAddresses[0];
+    const user2Address = accountAddresses[1];
+
+    await chainStorage.connect(user1).userRegister(UserExt);
+    await chainStorage.connect(user2).userRegister(UserExt);
+
+    const user1Duration = 100;
+    const user2Duration = 200;
+    const user1NewDuration = 300;
+    const user2NewDuration = 400;
+
+    await chainStorage.connect(user1).userAddFile(Cid, user1Duration, FileExt);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
+    await chainStorage.connect(nodes[0]).nodeFinishTask(1, FileSize);
+    expect(await userStorage.getFileDuration(user1Address, Cid)).to.equal(
+      user1Duration
+    );
+
+    await chainStorage.connect(user2).userAddFile(Cid, user2Duration, FileExt);
+    expect(await userStorage.getFileDuration(user1Address, Cid)).to.equal(
+      user1Duration
+    );
+    expect(await userStorage.getFileDuration(user2Address, Cid)).to.equal(
+      user2Duration
+    );
+
+    await chainStorage
+      .connect(user1)
+      .userSetFileDuration(Cid, user1NewDuration);
+    expect(await userStorage.getFileDuration(user1Address, Cid)).to.equal(
+      user1NewDuration
+    );
+    expect(await userStorage.getFileDuration(user2Address, Cid)).to.equal(
+      user2Duration
+    );
+
+    await chainStorage
+      .connect(user2)
+      .userSetFileDuration(Cid, user2NewDuration);
+    expect(await userStorage.getFileDuration(user1Address, Cid)).to.equal(
+      user1NewDuration
+    );
+    expect(await userStorage.getFileDuration(user2Address, Cid)).to.equal(
+      user2NewDuration
+    );
+  });
+
+  it("user can't deRegister for having files", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
+    await expect(chainStorage.connect(user).userDeRegister()).to.revertedWith(
+      "U:files not empty"
+    );
+  });
+
+  it("storage total", async function () {
     expect(await userStorage.getStorageTotal(userAddress)).to.equal(0);
 
     await chainStorage.connect(user).userRegister(UserExt);
-    expect(await userStorage.getStorageUsed(userAddress)).to.equal(0);
     expect(await userStorage.getStorageTotal(userAddress)).to.equal(
       UserStorageTotal
     );
@@ -75,13 +179,11 @@ describe("User", function () {
     await chainStorage
       .connect(deployer)
       .userSetStorageTotal(userAddress, newUserStorageTotal);
-    expect(await userStorage.getStorageUsed(userAddress)).to.equal(0);
     expect(await userStorage.getStorageTotal(userAddress)).to.equal(
       newUserStorageTotal
     );
 
     await chainStorage.connect(user).userDeRegister();
-    expect(await userStorage.getStorageUsed(userAddress)).to.equal(0);
     expect(await userStorage.getStorageTotal(userAddress)).to.equal(0);
   });
 
