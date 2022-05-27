@@ -175,35 +175,35 @@ describe("Node", function () {
   });
 
   it("should have no task", async function () {
-    expect(await nodeStorage.getTids(nodeAddress)).lengthOf(0);
+    expect(await nodeStorage.getTasks(nodeAddress)).lengthOf(0);
     await chainStorage.connect(node).nodeRegister(NodeStorageTotal, NodeExt);
     await chainStorage.connect(node).nodeOnline();
-    expect(await nodeStorage.getTids(nodeAddress)).lengthOf(0);
+    expect(await nodeStorage.getTasks(nodeAddress)).lengthOf(0);
   });
 
   it("should have task after finish task", async function () {
     await chainStorage.connect(node).nodeRegister(NodeStorageTotal, NodeExt);
     await chainStorage.connect(node).nodeOnline();
     await chainStorage.connect(users[0]).userAddFile(Cid, Duration, FileExt);
-    expect(await nodeStorage.getTids(nodeAddress)).lengthOf(1);
+    expect(await nodeStorage.getTasks(nodeAddress)).lengthOf(1);
     // expect(await nodeStorage.getTids(nodeAddress)).to.contains(
     //   BigNumber.from(1)
     // ); // TODO fix
-    console.log(await nodeStorage.getTids(nodeAddress));
+    console.log(await nodeStorage.getTasks(nodeAddress));
 
     await chainStorage.connect(node).nodeAcceptTask(1);
     await chainStorage.connect(node).nodeFinishTask(1, FileSize);
-    expect(await nodeStorage.getTids(nodeAddress)).lengthOf(0);
+    expect(await nodeStorage.getTasks(nodeAddress)).lengthOf(0);
 
     await chainStorage.connect(users[0]).userDeleteFile(Cid);
-    expect(await nodeStorage.getTids(nodeAddress)).lengthOf(1);
+    expect(await nodeStorage.getTasks(nodeAddress)).lengthOf(1);
     // await expect(await nodeStorage.getTids(nodeAddress)).to.contains(
     //   BigNumber.from(2)
     // ); // TODO fix
-    console.log(await nodeStorage.getTids(nodeAddress));
+    console.log(await nodeStorage.getTasks(nodeAddress));
     await chainStorage.connect(node).nodeAcceptTask(2);
     await chainStorage.connect(node).nodeFinishTask(2, FileSize);
-    expect(await nodeStorage.getTids(nodeAddress)).lengthOf(0);
+    expect(await nodeStorage.getTasks(nodeAddress)).lengthOf(0);
   });
 
   it("all [online] node test", async function () {

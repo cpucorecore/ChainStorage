@@ -13,8 +13,8 @@ interface INodeStorage {
     function setStatus(address nodeAddress, uint256 status) external;
     function resetAddFileFailedCount(string calldata cid) external;
     function upAddFileFailedCount(string calldata cid) external returns (uint256);
-    function addTid(address nodeAddress, uint256 tid) external;
-    function removeTid(address nodeAddress, uint256 tid) external;
+    function pushTaskBack(address nodeAddress, uint256 tid) external;
+    function popTaskFront(address nodeAddress) external;
 
     // read functions
     function exist(address nodeAddress) external view returns (bool);
@@ -29,5 +29,6 @@ interface INodeStorage {
     function getAllOnlineNodeAddresses() external view returns (address[] memory);
     function getAllOnlineNodeAddresses(uint256 pageSize, uint256 pageNumber) external view returns (address[] memory, bool);
     function getAddFileFailedCount(string calldata cid) external view returns (uint256);
-    function getTids(address nodeAddress) external view returns (uint256[] memory);
+    function getTasks(address nodeAddress) external view returns (uint256[] memory);
+    function currentTask(address nodeAddress) external view returns (uint256);
 }

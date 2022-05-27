@@ -6,12 +6,13 @@ import "./interfaces/storages/INodeStorage.sol";
 import "./lib/EnumerableSet.sol";
 import "./lib/Paging.sol";
 import "./lib/StorageSpaceManager.sol";
+import "./lib/DoubleEndedQueue.sol";
 
 contract NodeStorage is ExternalStorage, INodeStorage {
     using StorageSpaceManager for StorageSpaceManager.StorageSpace;
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
-    using EnumerableSet for EnumerableSet.UintSet;
+    using DoubleEndedQueue for DoubleEndedQueue.Uint256Deque;
 
     struct NodeItem {
         uint256 status;
@@ -19,11 +20,11 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         string ext;
     }
 
-    mapping(address=>NodeItem) private nodes;
+    mapping(address => NodeItem) private nodes;
     EnumerableSet.AddressSet private nodeAddresses;
     EnumerableSet.AddressSet private onlineNodeAddresses;
-    mapping(string=>uint256) private cid2addFileFailedCount;
-    mapping(address=>EnumerableSet.UintSet) private node2tids;
+    mapping(string => uint256) private cid2addFileFailedCount;
+    mapping(address => DoubleEndedQueue.Uint256Deque) private node2taskQueue;
 
     constructor(address _manager) public ExternalStorage(_manager) {}
 
@@ -85,14 +86,14 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         return cid2addFileFailedCount[cid];
     }
 
-    function addTid(address nodeAddress, uint256 tid) external {
+    function pushTaskBack(address nodeAddress, uint256 tid) external {
         mustManager(managerName);
-        node2tids[nodeAddress].add(tid);
+        node2taskQueue[nodeAddress].pushBack(tid);
     }
 
-    function removeTid(address nodeAddress, uint256 tid) external {
+    function popTaskFront(address nodeAddress) external {
         mustManager(managerName);
-        node2tids[nodeAddress].remove(tid);
+        node2taskQueue[nodeAddress].popFront();
     }
 
     // read functions
@@ -156,7 +157,16 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         return cid2addFileFailedCount[cid];
     }
 
-    function getTids(address nodeAddress) external view returns (uint256[] memory) {
-        return node2tids[nodeAddress].values();
+    function getTasks(address nodeAddress) external view returns (uint256[] memory) {
+        DoubleEndedQueue.Uint256Deque storage taskQueue = node2taskQueue[nodeAddress];
+        uint256[] memory result = new uint256[](taskQueue.length());
+        for (uint256 i=0; i<taskQueue.length(); i++) {
+            result[i] = taskQueue.at(i);
+        }
+        return result;
+    }
+
+    function currentTask(address nodeAddress) external view returns (uint256) {
+        return node2taskQueue[nodeAddress].front();
     }
 }
