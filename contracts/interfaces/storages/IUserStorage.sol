@@ -7,7 +7,7 @@ interface IUserStorage {
     function setExt(address userAddress, string calldata ext) external;
     function setStorageTotal(address userAddress, uint256 size) external;
     function upInvalidAddFileCount(address userAddress) external returns (uint256);
-    function useStorage(address userAddress, uint256 size) external;
+    function useStorage(address userAddress, uint256 size, bool checkSpaceEnough) external;
     function freeStorage(address userAddress, uint256 size) external;
     function exist(address userAddress) external view returns (bool);
     function getExt(address userAddress) external view returns (string memory);

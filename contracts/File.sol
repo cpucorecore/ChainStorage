@@ -34,14 +34,14 @@ contract File is Importable, ExternalStorable, IFile {
         return ITask(requireAddress(CONTRACT_TASK));
     }
 
-    function addFile(string calldata cid, address userAddress) external returns (bool finish) {
+    function addFile(string calldata cid, address userAddress) external returns (bool exist) {
         mustAddress(CONTRACT_USER);
 
         if(!_Storage().exist(cid)) {
             _Storage().newFile(cid);
             _Node().addFile(userAddress, cid);
         } else {
-            finish = true;
+            exist = true;
         }
 
         if(!_Storage().userExist(cid, userAddress)) {

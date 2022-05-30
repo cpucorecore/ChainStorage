@@ -53,7 +53,7 @@ contract NodeStorage is ExternalStorage, INodeStorage {
     }
 
     function useStorage(address nodeAddress, uint256 size) external {
-        nodes[nodeAddress].storageSpace.useSpace(size);
+        nodes[nodeAddress].storageSpace.useSpace(size, true);
     }
 
     function freeStorage(address nodeAddress, uint256 size) external {

@@ -68,11 +68,11 @@ contract User is Importable, ExternalStorable, IUser {
 
         emit UserAction(userAddress, Add, cid);
 
-        bool finish = _File().addFile(cid, userAddress);
-        if(finish) {
+        bool exist = _File().addFile(cid, userAddress);
+        if(exist) {
             uint256 size = _File().getSize(cid);
             require(size > 0, "U:file size zero, file in processing, please wait a moment and try again");
-            _Storage().useStorage(userAddress, size);
+            _Storage().useStorage(userAddress, size, true);
             emit FileAdded(userAddress, cid);
         }
         _Storage().addFile(userAddress, cid, duration, ext);
@@ -81,7 +81,7 @@ contract User is Importable, ExternalStorable, IUser {
     function onAddFileFinish(address userAddress, string calldata cid, uint256 size) external {
         mustAddress(CONTRACT_FILE);
         if(_Storage().fileExist(userAddress, cid)) {
-            _Storage().useStorage(userAddress, size);
+            _Storage().useStorage(userAddress, size, false);
             emit FileAdded(userAddress, cid);
         }
     }

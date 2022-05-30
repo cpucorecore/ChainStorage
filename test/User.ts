@@ -290,4 +290,32 @@ describe("User", function () {
       UserStorageTotal
     );
   });
+
+  it("task should finish when user space not enough", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    await chainStorage.connect(user).userAddFile(Cids[3], Duration, FileExt);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
+    await chainStorage
+      .connect(nodes[0])
+      .nodeFinishTask(1, UserStorageTotal * 2);
+    expect(await userStorage.getStorageUsed(userAddress)).to.equal(
+      UserStorageTotal * 2
+    );
+  });
+
+  it("user should fail to addFile when used space > total space", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    await chainStorage.connect(user).userAddFile(Cids[3], Duration, FileExt);
+    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
+    await chainStorage
+      .connect(nodes[0])
+      .nodeFinishTask(1, UserStorageTotal * 2);
+    expect(await userStorage.getStorageUsed(userAddress)).to.equal(
+      UserStorageTotal * 2
+    );
+
+    await expect(
+      chainStorage.connect(user).userAddFile(Cids[0], Duration, FileExt)
+    ).to.revertedWith("U:storage space not enough");
+  });
 });
