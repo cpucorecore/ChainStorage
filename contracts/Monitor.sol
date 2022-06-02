@@ -161,7 +161,7 @@ contract Monitor is Importable, ExternalStorable, IMonitor {
             return false;
         }
 
-        (,uint256 action,,,) = _Task().getTask(tid);
+        (,uint256 action,,,,) = _Task().getTask(tid);
         if(Add == action) {
             uint256 addFileTimeout = _Setting().getAddFileTaskTimeout();
             if(now > statusTime.add(addFileTimeout)) {

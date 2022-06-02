@@ -9,6 +9,9 @@ import "./interfaces/INode.sol";
 import "./interfaces/ITask.sol";
 
 contract File is Importable, ExternalStorable, IFile {
+    event TryRequestAddFile(uint256 sid, string cid);
+    event TryRequestDeleteFile(uint256 sid, string cid, address[] nodeAddresses);
+
     constructor(IResolver _resolver) public Importable(_resolver) {
         setContractName(CONTRACT_FILE);
         imports = [
@@ -34,83 +37,92 @@ contract File is Importable, ExternalStorable, IFile {
         return ITask(requireAddress(CONTRACT_TASK));
     }
 
-    function addFile(string calldata cid, address userAddress) external returns (bool exist) {
+    function addFile(address userAddress, string calldata cid, uint256 size) external returns (bool waitCallback) {
         mustAddress(CONTRACT_USER);
 
-        if(!_Storage().exist(cid)) {
-            _Storage().newFile(cid);
-            _Node().addFile(userAddress, cid);
-        } else {
-            exist = true;
-        }
+        waitCallback = false;
 
-        if(!_Storage().userExist(cid, userAddress)) {
-            _Storage().addUser(cid, userAddress);
+        uint256 status = _Storage().getStatus(cid);
+        require(DefaultStatus == status || FileAdded == status, "F:wrong status");
+
+        _Storage().addUser(cid, userAddress);
+        if (DefaultStatus == status) {
+            _Storage().newFile(cid, size);
+            _Storage().setStatus(cid, FileAdding);
+
+            _Node().addFile(userAddress, cid, size);
+            waitCallback = true;
         }
     }
 
-    function onNodeAddFileFinish(address nodeAddress, address userAddress, string calldata cid, uint256 size) external {
+    function onNodeAddFileFinish(address nodeAddress, address userAddress, string calldata cid, uint256 size, uint256 replica) external {
         mustAddress(CONTRACT_NODE);
 
-        if(_Storage().exist(cid)) {
-            if(_Storage().nodeEmpty(cid)) {
-                _User().onAddFileFinish(userAddress, cid, size);
-                _Storage().setSize(cid, size);
-                _Storage().upTotalSize(size);
-            }
+        uint256 status = _Storage().getStatus(cid);
+        require(FileAdding == status || FilePartialAdded == status, "F:wrong status");
 
-            if(!_Storage().nodeExist(cid, nodeAddress)) {
-                _Storage().addNode(cid, nodeAddress);
-            }
-        } else {
-            _Task().issueTask(Delete, userAddress, cid, nodeAddress, true);
+        if (!_Storage().nodeExist(cid, nodeAddress)) {
+            _Storage().addNode(cid, nodeAddress);
+        }
+
+        _Storage().setStatus(cid, FilePartialAdded);
+        if (replica == _Storage().getNodesNumber(cid)) {
+            _Storage().upTotalSize(size);
+            _Storage().setStatus(cid, FileAdded);
+            _User().onAddFileFinish(userAddress, cid);
         }
     }
 
-    function onAddFileFail(address userAddress, string calldata cid) external {
+    function onAddFileFail(address userAddress, string calldata cid, uint256 reason) external {
         mustAddress(CONTRACT_NODE);
-        _User().onAddFileFail(userAddress, cid);
+
+        require(0 == _Storage().getNodesNumber(cid), "F:nodes not empty");
+        uint256 size = _Storage().getSize(cid);
+        _Storage().deleteFile(cid);//////////////////////???????
+        _User().onAddFileFail(userAddress, cid, size, reason);
     }
 
-    function deleteFile(string calldata cid, address userAddress) external returns (bool finish) {
+    function deleteFile(address userAddress, string calldata cid) external returns (bool waitCallback) {
         mustAddress(CONTRACT_USER);
 
         require(_Storage().exist(cid), "F:file not exist");
 
-        if(_Storage().userExist(cid, userAddress)) {
+        waitCallback = false;
+
+        if (_Storage().userExist(cid, userAddress)) {
             _Storage().deleteUser(cid, userAddress);
         }
 
-        if(_Storage().userEmpty(cid)) {
-            if(_Storage().nodeEmpty(cid)) {
+        if (_Storage().userEmpty(cid)) {
+            if (_Storage().nodeEmpty(cid)) {
                 _Storage().deleteFile(cid);
                 _Storage().downTotalSize(_Storage().getSize(cid));
-                finish = true;
             } else {
                 address[] memory nodeAddresses = _Storage().getNodes(cid);
-                for(uint i=0; i< nodeAddresses.length; i++) {
-                    _Task().issueTask(Delete, userAddress, cid, nodeAddresses[i], false);
+                for(uint i=0; i<nodeAddresses.length; i++) {
+                    _Task().issueDeleteFileTask(userAddress, cid, nodeAddresses[i], false);
                 }
+
+                waitCallback = true;
             }
-        } else {
-            finish = true;
         }
     }
 
     function onNodeDeleteFileFinish(address nodeAddress, address userAddress, string calldata cid) external {
         mustAddress(CONTRACT_NODE);
 
-        if(_Storage().nodeExist(cid, nodeAddress)) {
+        if (_Storage().nodeExist(cid, nodeAddress)) {
             _Storage().deleteNode(cid, nodeAddress);
         }
 
-        if(_Storage().nodeEmpty(cid)) {
+        if (_Storage().nodeEmpty(cid)) {
             uint256 size = _Storage().getSize(cid);
-            _User().onDeleteFileFinish(userAddress, cid, size);
             if(_Storage().userEmpty(cid)) {
                 _Storage().deleteFile(cid);
                 _Storage().downTotalSize(size);
             }
+
+            _User().onDeleteFileFinish(userAddress, cid, size);
         }
     }
 

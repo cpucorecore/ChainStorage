@@ -6,9 +6,9 @@ interface IUser {
     function setStorageTotal(address userAddress, uint256 size) external;
     function deRegister(address userAddress) external;
 
-    function addFile(address userAddress, string calldata cid, uint256 duration, string calldata ext) external;
-    function onAddFileFinish(address userAddress, string calldata cid, uint256 size) external;
-    function onAddFileFail(address userAddress, string calldata cid) external;
+    function addFile(address userAddress, string calldata cid, uint256 size, string calldata ext, uint256 duration) external;
+    function onAddFileFinish(address userAddress, string calldata cid) external;
+    function onAddFileFail(address userAddress, string calldata cid, uint256 size, uint256 reason) external;
 
     function deleteFile(address userAddress, string calldata cid) external;
     function onDeleteFileFinish(address userAddress, string calldata cid, uint256 size) external;

@@ -9,11 +9,14 @@ import "./interfaces/ISetting.sol";
 import "./interfaces/ITask.sol";
 import "./interfaces/IFile.sol";
 import "./lib/NodeSelector.sol";
+import "./base/DataTypes.sol";
 
 contract Node is Importable, ExternalStorable, INode {
     using NodeSelector for address;
 
     event NodeStatusChanged(address indexed addr, uint256 from, uint256 to);
+
+    event WrongFileSize(address userAddress, address nodeAddress, uint256 userClaimSize);
 
     constructor(IResolver _resolver) public Importable(_resolver) {
         setContractName(CONTRACT_NODE);
@@ -103,7 +106,7 @@ contract Node is Importable, ExternalStorable, INode {
         emit NodeStatusChanged(nodeAddress, status, NodeMaintain);
     }
 
-    function addFile(address userAddress, string calldata cid) external {
+    function addFile(address userAddress, string calldata cid, uint256 size) external {
         mustAddress(CONTRACT_FILE);
 
         uint256 replica = _Setting().getReplica();
@@ -112,8 +115,9 @@ contract Node is Importable, ExternalStorable, INode {
         (address[] memory nodeAddresses, bool success) = getStorage().selectNodes(replica);
         require(success, "N:no available node");
 
-        for(uint256 i=0; i< nodeAddresses.length; i++) {
-            _Task().issueTask(Add, userAddress, cid, nodeAddresses[i], false);
+        for(uint256 i=0; i<nodeAddresses.length; i++) {
+            _Storage().useStorage(nodeAddresses[i], size);
+            _Task().issueAddFileTask(userAddress, cid, size, nodeAddresses[i], replica);
         }
     }
 
@@ -121,49 +125,36 @@ contract Node is Importable, ExternalStorable, INode {
         require(_Storage().exist(nodeAddress), "N:node not exist");
     }
 
-    function finishTask(address nodeAddress, uint256 tid, uint256 size) external {
+    function finishTask(address nodeAddress, uint256 tid) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
-        require(_Storage().firstTaskInTaskQueue(nodeAddress) == tid, "N:must do task by queue");
-        (address userAddress, uint256 action,,bool noCallback, string memory cid) = _Task().getTask(tid);
 
-        if(Add == action) {
-            _File().onNodeAddFileFinish(nodeAddress, userAddress, cid, size);
-            _Storage().useStorage(nodeAddress, size);
-            _Storage().resetAddFileFailedCount(cid);
-        } else if(Delete == action) {
-            _Storage().freeStorage(nodeAddress, _File().getSize(cid));
-            if(!noCallback) {
-                _File().onNodeDeleteFileFinish(nodeAddress, userAddress, cid);
-            }
+        require(_Storage().firstTaskInTaskQueue(nodeAddress) == tid, "N:must do task by task queue");
+
+        DataTypes.TaskItem memory task = _Task().getTask(tid);
+        if (Add == task.action) {
+            _File().onNodeAddFileFinish(nodeAddress, task.user, task.cid, task.size, task.replica);
+        } else if (Delete == action) {
+            _Storage().freeStorage(nodeAddress, task.size);
+            _File().onNodeDeleteFileFinish(nodeAddress, task.user, task.cid);
         }
 
         _Task().finishTask(nodeAddress, tid);
         _Storage().popTaskFront(nodeAddress);
     }
 
-    function failTask(address nodeAddress, uint256 tid) external {
+    function failTask(address nodeAddress, uint256 tid, uint256 reason) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
+
         require(_Storage().firstTaskInTaskQueue(nodeAddress) == tid, "N:must do task by queue");
-        (address userAddress, uint256 action,,,string memory cid) = _Task().getTask(tid);
+        require(QueryFileSizeTimeout == reason || WrongFileSize == reason, "N:wrong reason");
 
-        uint256 maxAddFileFailedCount = _Setting().getMaxAddFileFailedCount();
-        uint256 addFileFailedCount = _Storage().upAddFileFailedCount(cid);
-        if(Add == action) {
-            _Storage().popTaskFront(nodeAddress);
-        }
+        DataTypes.TaskItem memory task = _Task().getTask(tid);
+        require(Add == task.action, "N:only add file task can fail");
 
-        if(addFileFailedCount >= maxAddFileFailedCount) {
-            _File().onAddFileFail(userAddress, cid);
-            return;
-        }
-
-        if(Add == action) {
-            if(_File().getNodeNumber(cid) < _Setting().getReplica()) {
-                _retryAddFileTask(userAddress, cid, nodeAddress);
-            }
-        }
-
-        _Task().failTask(nodeAddress, tid);
+        _Storage().freeStorage(nodeAddress, task.size);
+        _Storage().popTaskFront(nodeAddress);
+        _Task().failTask(nodeAddress, tid, reason);
+        _File().onAddFileFail(task.user, task.cid, reason);
     }
 
     function reportAcceptTaskTimeout(uint256 tid) external {
@@ -182,6 +173,7 @@ contract Node is Importable, ExternalStorable, INode {
 
     function reportTaskTimeout(uint256 tid) external {
         mustAddress(CONTRACT_MONITOR);
+
         (address userAddress, uint256 action, address nodeAddress, , string memory cid) = _Task().getTask(tid);
         require(_Storage().firstTaskInTaskQueue(nodeAddress) == tid, "N:must do task by queue");
         _offline(nodeAddress);
@@ -211,11 +203,12 @@ contract Node is Importable, ExternalStorable, INode {
         emit NodeStatusChanged(nodeAddress, status, NodeOffline);
     }
 
+    // TODO change to _retryTask
     function _retryAddFileTask(address userAddress, string memory cid, address excludedAddress) private {
         address nodeStorageAddress = getStorage();
         (address node, bool success) = nodeStorageAddress.selectOneNode(requireAddress(CONTRACT_FILE), requireAddress(CONTRACT_TASK), excludedAddress, cid);
         require(success, "N:no available node");
-        _Task().issueTask(Add, userAddress, cid, node, false);
+        _Task().issueAddFileTask(userAddress, cid, size, node, replica);
     }
 
     function taskIssuedCallback(address nodeAddress, uint256 tid) external {

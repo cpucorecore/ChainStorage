@@ -38,7 +38,7 @@ describe("User", function () {
     await revertToSnapshot();
   });
 
-  it("exist", async function () {
+  it("user exist test", async function () {
     expect(await userStorage.exist(userAddress)).to.equal(false);
 
     await chainStorage.connect(user).userRegister(UserExt);
@@ -48,7 +48,7 @@ describe("User", function () {
     expect(await userStorage.exist(userAddress)).to.equal(false);
   });
 
-  it("ext", async function () {
+  it("user ext test", async function () {
     const newExt = "newExt";
 
     expect(await userStorage.getExt(userAddress)).to.equal("");
@@ -167,7 +167,7 @@ describe("User", function () {
     );
   });
 
-  it("storage total", async function () {
+  it("storage total test", async function () {
     expect(await userStorage.getStorageTotal(userAddress)).to.equal(0);
 
     await chainStorage.connect(user).userRegister(UserExt);
@@ -187,7 +187,7 @@ describe("User", function () {
     expect(await userStorage.getStorageTotal(userAddress)).to.equal(0);
   });
 
-  it("total user number", async function () {
+  it("total user number test", async function () {
     const user1 = accounts[0];
     const user2 = accounts[1];
     const user3 = accounts[2];
@@ -232,7 +232,7 @@ describe("User", function () {
     expect(await userStorage.getTotalUserNumber()).to.equal(2);
   });
 
-  it("user storage space", async function () {
+  it("user storage test", async function () {
     const cid1 = Cids[0];
     const cid2 = Cids[1];
     const cid1size = 10001;

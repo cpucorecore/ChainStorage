@@ -3,55 +3,29 @@ pragma solidity ^0.5.2;
 import "./storages/ExternalStorage.sol";
 import "./interfaces/storages/ITaskStorage.sol";
 import "./lib/EnumerableSet.sol";
+import "./base/DataTypes.sol";
 
 contract TaskStorage is ExternalStorage, ITaskStorage {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    struct TaskItem {
-        address user;
-        uint256 action;
-        address node;
-        bool noCallback;
-        string cid;
-    }
-
-    struct TaskState {
-        uint256 status;
-        uint256 createBlockNumber;
-        uint256 createTime;
-        uint256 acceptTime;
-        uint256 acceptTimeoutTime;
-        uint256 finishTime;
-        uint256 failTime;
-        uint256 timeoutTime;
-    }
-
-    struct AddFileTaskProgress {
-        uint256 time;
-        uint256 lastSize;
-        uint256 currentSize;
-        uint256 size;
-        uint256 lastPercentage;
-        uint256 currentPercentage;
-    }
-
     uint256 private currentTid;
-    mapping(uint256=>TaskItem) private tid2taskItem;
-    mapping(uint256=>TaskState) private tid2taskState;
-    mapping(uint256=>AddFileTaskProgress) private tid2addFileProgress;
-    mapping(address=>EnumerableSet.Bytes32Set) private node2addFileCidHashes;
-    mapping(string=>EnumerableSet.AddressSet) private cid2addFileNodes;
+    mapping(uint256 => DataTypes.TaskItem) private tid2taskItem;
+    mapping(uint256 => DataTypes.TaskState) private tid2taskState;
+    mapping(uint256 => DataTypes.TaskAddFileProgress) private tid2addFileProgress;
+    mapping(address => EnumerableSet.Bytes32Set) private node2addFileCidHashes;
+    mapping(string => EnumerableSet.AddressSet) private cid2addFileNodes;
 
     constructor(address _manager) public ExternalStorage(_manager) {}
 
-    function newTask(address userAddress, uint256 action, string calldata cid, address nodeAddress, bool noCallback) external returns (uint256) {
+    function newTask(address userAddress, uint256 action, string calldata cid, uint256 size, address nodeAddress, uint256 replica) external returns (uint256) {
         mustManager(managerName);
+
         currentTid = currentTid.add(1);
 
-        tid2taskItem[currentTid] = TaskItem(userAddress, action, nodeAddress, noCallback, cid);
+        tid2taskItem[currentTid] = DataTypes.TaskItem(userAddress, action, cid, size, nodeAddress);
         tid2taskState[currentTid] = TaskState(TaskCreated, block.number, now, 0, 0, 0, 0, 0);
-        if(Add == action) {
+        if (Add == action) {
             tid2addFileProgress[currentTid] = AddFileTaskProgress(0, 0, 0, 0, 0, 0);
 
             bytes32 cidHash = keccak256(bytes(cid));
@@ -64,9 +38,8 @@ contract TaskStorage is ExternalStorage, ITaskStorage {
         return currentTid;
     }
 
-    function getTask(uint256 tid) external view returns (address, uint256, address, bool, string memory) {
-        TaskItem storage task = tid2taskItem[tid];
-        return (task.user, task.action, task.node, task.noCallback, task.cid);
+    function getTask(uint256 tid) external view returns (TaskItem memory) {
+        return tid2taskItem[tid];
     }
 
     function exist(uint256 tid) external view returns (bool) {
@@ -152,6 +125,10 @@ contract TaskStorage is ExternalStorage, ITaskStorage {
             node2addFileCidHashes[task.node].remove(cidHash);
             cid2addFileNodes[task.cid].remove(task.node);
         }
+    }
+
+    function setFailReason(uint256 tid, uint256 reason) external {
+        tid2taskState[tid].failReason = reason;
     }
 
     function getAddFileTaskProgress(uint256 tid) external view returns (uint256, uint256, uint256, uint256, uint256, uint256) {

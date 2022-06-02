@@ -17,6 +17,7 @@ library NodeSelector {
         return ITask(taskAddress);
     }
 
+    // TODO check node storage space
     function selectNodes(address nodeStorageAddress, uint256 count) internal view returns (address[] memory nodes, bool success) {
         address[] memory allOnlineNodeAddresses = _NodeStorage(nodeStorageAddress).getAllOnlineNodeAddresses();
 

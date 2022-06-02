@@ -9,29 +9,36 @@ contract FileStorage is ExternalStorage, IFileStorage {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     struct FileItem {
-        bool exist;
+        uint256 size;
+        uint256 status;
         EnumerableSet.AddressSet users;
         EnumerableSet.AddressSet nodes;
     }
 
-    mapping(string=>FileItem) private cid2fileItem;
-    mapping(bytes32=>string) private cidHash2cid;
-    mapping(string=>uint256) private cid2size;
+    uint256 private sid;
+
+    mapping(string => FileItem) private cid2fileItem;
+    mapping(bytes32 => string) private cidHash2cid;
     uint256 private totalSize;
     uint256 private totalFileNumber;
 
     constructor(address _manager) public ExternalStorage(_manager) {}
 
-    function exist(string memory cid) public view returns (bool) {
-        return cid2fileItem[cid].exist;
+    function newSid() external returns (uint256) {
+        sid = sid + 1;
+        return sid;
     }
 
-    function newFile(string calldata cid) external {
+    function exist(string memory cid) public view returns (bool) {
+        return cid2fileItem[cid].status > 0;
+    }
+
+    function newFile(string calldata cid, uint256 size) external {
         mustManager(managerName);
 
         EnumerableSet.AddressSet memory users;
         EnumerableSet.AddressSet memory nodes;
-        cid2fileItem[cid] = FileItem(true, users, nodes);
+        cid2fileItem[cid] = FileItem(size, DefaultStatus, users, nodes);
 
         bytes32 cidHash = keccak256(bytes(cid));
         cidHash2cid[cidHash] = cid;
@@ -49,12 +56,16 @@ contract FileStorage is ExternalStorage, IFileStorage {
     }
 
     function getSize(string calldata cid) external view returns (uint256) {
-        return cid2size[cid];
+        return cid2fileItem[cid].size;
     }
 
-    function setSize(string calldata cid, uint256 size) external {
+    function getStatus(string calldata cid) external view returns (uint256) {
+        return cid2fileItem[cid].status;
+    }
+
+    function setStatus(string calldata cid, uint256 status) external {
         mustManager(managerName);
-        cid2size[cid] = size;
+        cid2fileItem[cid].size = status;
     }
 
     function userExist(string calldata cid, address userAddress) external view returns (bool) {
@@ -112,6 +123,10 @@ contract FileStorage is ExternalStorage, IFileStorage {
     function deleteNode(string calldata cid, address nodeAddress) external {
         mustManager(managerName);
         cid2fileItem[cid].nodes.remove(nodeAddress);
+    }
+
+    function getNodesNumber(string calldata cid) external view returns (uint256) {
+        return cid2fileItem[cid].nodes.length();
     }
 
     function getNodes(string calldata cid) external view returns (address[] memory) {

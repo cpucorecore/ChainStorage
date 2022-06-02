@@ -1,11 +1,11 @@
 pragma solidity ^0.5.2;
 
 interface IFile {
-    function addFile(string calldata cid, address userAddress) external returns (bool);
-    function onNodeAddFileFinish(address nodeAddress, address userAddress, string calldata cid, uint256 size) external;
-    function onAddFileFail(address userAddress, string calldata cid) external;
+    function addFile(address userAddress, string calldata cid, uint256 size) external returns (bool waitCallback);
+    function onNodeAddFileFinish(address nodeAddress, address userAddress, string calldata cid, uint256 size, uint256 replica) external;
+    function onAddFileFail(address userAddress, string calldata cid, uint256 reason) external;
 
-    function deleteFile(string calldata cid, address userAddress) external returns (bool finish);
+    function deleteFile(address userAddress, string calldata cid) external returns (bool waitCallback);
     function onNodeDeleteFileFinish(address nodeAddress, address userAddress, string calldata cid) external;
 
     function getSize(string calldata cid) external view returns (uint256);

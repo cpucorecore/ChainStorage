@@ -10,16 +10,13 @@ library StorageSpaceManager {
         uint256 total;
     }
 
-    function useSpace(StorageSpace storage self, uint256 size, bool checkSpaceEnough) internal {
-        if (checkSpaceEnough) {
-            require(self.used.add(size) <= self.total, "SSM:useSpace space not enough");
-        }
-
+    function useSpace(StorageSpace storage self, uint256 size) internal {
+        require(self.used.add(size) <= self.total, "SSM:useSpace space not enough");
         self.used = self.used.add(size);
     }
 
-    function unUseSpace(StorageSpace storage self, uint256 size) internal {
-        require(size <= self.used, "SSM:unUseSpace out of used");
+    function freeSpace(StorageSpace storage self, uint256 size) internal {
+        require(size <= self.used, "SSM:freeSpace out of used");
         self.used -= size;
     }
 

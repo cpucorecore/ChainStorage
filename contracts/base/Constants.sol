@@ -42,4 +42,17 @@ contract Constants {
     uint256 constant MonitorRegistered = 1;
     uint256 constant MonitorOnline = 2;
     uint256 constant MonitorMaintain = 3;
+
+    // file status
+    uint256 constant FileAdding = 1;
+    uint256 constant FilePartialAdded = 2;
+    uint256 constant FileAdded = 3;
+    uint256 constant FileAddFailed = 4;
+    uint256 constant FileDeleting = 5;
+    uint256 constant FilePartialDeleted = 6;
+
+    // add file fail reason
+    uint256 constant QueryFileSizeTimeout = 1;
+    uint256 constant WrongFileSize = 2;
+    uint256 constant ExceedMaxAddFileFailedCount = 3;
 }

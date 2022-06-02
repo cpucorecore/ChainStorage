@@ -13,9 +13,9 @@ contract UserStorage is ExternalStorage, IUserStorage {
 
     struct FileItem {
         string cid;
+        string ext;
         uint256 createTime;
         uint256 duration;
-        string ext;
     }
 
     struct UserItem {
@@ -54,14 +54,14 @@ contract UserStorage is ExternalStorage, IUserStorage {
         users[userAddress].storageSpace.total = size;
     }
 
-    function useStorage(address userAddress, uint256 size, bool checkSpaceEnough) external {
+    function useStorage(address userAddress, uint256 size) external {
         mustManager(managerName);
-        users[userAddress].storageSpace.useSpace(size, checkSpaceEnough);
+        users[userAddress].storageSpace.useSpace(size);
     }
 
     function freeStorage(address userAddress, uint256 size) external {
         mustManager(managerName);
-        users[userAddress].storageSpace.unUseSpace(size);
+        users[userAddress].storageSpace.freeSpace(size);
     }
 
     function exist(address userAddress) public view returns (bool) {
@@ -84,15 +84,17 @@ contract UserStorage is ExternalStorage, IUserStorage {
         return users[userAddress].storageSpace.used;
     }
 
-    function addFile(address userAddress, string calldata cid, uint256 duration, string calldata ext) external {
+    function addFile(address userAddress, string calldata cid, string calldata ext, uint256 duration) external {
         mustManager(managerName);
+
         bytes32 cidHash = keccak256(bytes(cid));
-        files[userAddress][cidHash] = FileItem(cid, now, duration, ext);
+        files[userAddress][cidHash] = FileItem(cid, ext, now, duration);
         users[userAddress].cidHashes.add(cidHash);
     }
 
     function deleteFile(address userAddress, string calldata cid) external {
         mustManager(managerName);
+
         bytes32 cidHash = keccak256(bytes(cid));
         users[userAddress].cidHashes.remove(cidHash);
         delete files[userAddress][cidHash];
@@ -100,18 +102,21 @@ contract UserStorage is ExternalStorage, IUserStorage {
 
     function setFileExt(address userAddress, string calldata cid, string calldata ext) external {
         mustManager(managerName);
+
         bytes32 cidHash = keccak256(bytes(cid));
         files[userAddress][cidHash].ext = ext;
     }
 
     function setFileDuration(address userAddress, string calldata cid, uint256 duration) external {
         mustManager(managerName);
+
         bytes32 cidHash = keccak256(bytes(cid));
         files[userAddress][cidHash].duration = duration;
     }
 
     function upInvalidAddFileCount(address userAddress) external returns (uint256) {
         mustManager(managerName);
+
         users[userAddress].invalidAddFileCount = users[userAddress].invalidAddFileCount.add(1);
         return users[userAddress].invalidAddFileCount;
     }

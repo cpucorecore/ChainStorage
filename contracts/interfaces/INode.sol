@@ -9,10 +9,10 @@ interface INode {
     function online(address nodeAddress) external;
     function maintain(address nodeAddress) external;
 
-    function addFile(address userAddress, string calldata cid) external;
+    function addFile(address userAddress, string calldata cid, uint256 size) external;
 
-    function finishTask(address nodeAddress, uint256 tid, uint256 size) external;
-    function failTask(address nodeAddressAddress, uint256 tid) external;
+    function finishTask(address nodeAddress, uint256 tid) external;
+    function failTask(address nodeAddressAddress, uint256 tid, uint256 reason) external;
 
     function reportAcceptTaskTimeout(uint256 tid) external;
     function reportTaskTimeout(uint256 tid) external;

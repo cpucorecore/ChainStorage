@@ -12,6 +12,7 @@ contract NodeStorage is ExternalStorage, INodeStorage {
     using StorageSpaceManager for StorageSpaceManager.StorageSpace;
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableSet for EnumerableSet.UintSet;
     using DoubleEndedQueue for DoubleEndedQueue.Uint256Deque;
 
     struct NodeItem {
@@ -23,6 +24,7 @@ contract NodeStorage is ExternalStorage, INodeStorage {
     mapping(address => NodeItem) private nodes;
     EnumerableSet.AddressSet private nodeAddresses;
     EnumerableSet.AddressSet private onlineNodeAddresses;
+
     mapping(string => uint256) private cid2addFileFailedCount;
     mapping(address => DoubleEndedQueue.Uint256Deque) private node2taskQueue;
 
@@ -57,7 +59,7 @@ contract NodeStorage is ExternalStorage, INodeStorage {
     }
 
     function freeStorage(address nodeAddress, uint256 size) external {
-        nodes[nodeAddress].storageSpace.unUseSpace(size);
+        nodes[nodeAddress].storageSpace.freeSpace(size);
     }
 
     function addOnlineNode(address nodeAddress) external {
