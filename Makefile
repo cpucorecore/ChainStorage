@@ -1,4 +1,7 @@
-all: test
+all: compile
+
+compile: $(wildcard test/*) $(wildcard contracts/**/*)
+	npx hardhat compile --force
 
 .PHONY: test
 test: $(wildcard test/*) $(wildcard contracts/**/*)

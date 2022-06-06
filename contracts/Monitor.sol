@@ -4,8 +4,8 @@ import "./base/Importable.sol";
 import "./base/ExternalStorable.sol";
 import "./interfaces/IMonitor.sol";
 import "./interfaces/storages/IMonitorStorage.sol";
-import "./interfaces/ITask.sol";
-import "./interfaces/INode.sol";
+import "./interfaces/ITaskManager.sol";
+import "./interfaces/INodeManager.sol";
 import "./interfaces/ISetting.sol";
 import "./lib/SafeMath.sol";
 
@@ -29,12 +29,12 @@ contract Monitor is Importable, ExternalStorable, IMonitor {
         return IMonitorStorage(getStorage());
     }
 
-    function _Task() private view returns (ITask) {
-        return ITask(requireAddress(CONTRACT_TASK));
+    function _Task() private view returns (ITaskManager) {
+        return ITaskManager(requireAddress(CONTRACT_TASK));
     }
 
-    function _Node() private view returns (INode) {
-        return INode(requireAddress(CONTRACT_NODE));
+    function _Node() private view returns (INodeManager) {
+        return INodeManager(requireAddress(CONTRACT_NODE));
     }
 
     function _Setting() private view returns (ISetting) {

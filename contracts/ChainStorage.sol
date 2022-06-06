@@ -3,10 +3,10 @@ pragma solidity ^0.5.2;
 import "./base/Proxyable.sol";
 import "./base/Pausable.sol";
 import "./base/Importable.sol";
-import "./interfaces/IUser.sol";
-import "./interfaces/INode.sol";
+import "./interfaces/IUserManager.sol";
+import "./interfaces/INodeManager.sol";
 import "./interfaces/IMonitor.sol";
-import "./interfaces/ITask.sol";
+import "./interfaces/ITaskManager.sol";
 import "./interfaces/ISetting.sol";
 
 contract ChainStorage is Proxyable, Pausable, Importable {
@@ -33,20 +33,20 @@ contract ChainStorage is Proxyable, Pausable, Importable {
         return ISetting(requireAddress(CONTRACT_SETTING));
     }
 
-    function _User() private view returns (IUser) {
-        return IUser(requireAddress(CONTRACT_USER));
+    function _User() private view returns (IUserManager) {
+        return IUserManager(requireAddress(CONTRACT_USER));
     }
 
-    function _Node() private view returns (INode) {
-        return INode(requireAddress(CONTRACT_NODE));
+    function _Node() private view returns (INodeManager) {
+        return INodeManager(requireAddress(CONTRACT_NODE));
     }
 
     function _Monitor() private view returns (IMonitor) {
         return IMonitor(requireAddress(CONTRACT_MONITOR));
     }
 
-    function _Task() private view returns (ITask) {
-        return ITask(requireAddress(CONTRACT_TASK));
+    function _Task() private view returns (ITaskManager) {
+        return ITaskManager(requireAddress(CONTRACT_TASK));
     }
 
     function userRegister(string calldata ext) external {

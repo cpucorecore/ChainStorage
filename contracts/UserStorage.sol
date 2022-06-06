@@ -11,7 +11,7 @@ contract UserStorage is ExternalStorage, IUserStorage {
     using StorageSpaceManager for StorageSpaceManager.StorageSpace;
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
-    struct FileItem {
+    struct File {
         string cid;
         uint256 createTime;
         uint256 duration;
@@ -26,7 +26,7 @@ contract UserStorage is ExternalStorage, IUserStorage {
     }
 
     mapping(address=>UserItem) private users;
-    mapping(address=>mapping(bytes32=>FileItem)) files;
+    mapping(address=>mapping(bytes32=> File)) files;
     uint256 private totalUserNumber;
 
     constructor(address _manager) public ExternalStorage(_manager) {}
@@ -87,7 +87,7 @@ contract UserStorage is ExternalStorage, IUserStorage {
     function addFile(address userAddress, string calldata cid, uint256 duration, string calldata ext) external {
         mustManager(managerName);
         bytes32 cidHash = keccak256(bytes(cid));
-        files[userAddress][cidHash] = FileItem(cid, now, duration, ext);
+        files[userAddress][cidHash] = File(cid, now, duration, ext);
         users[userAddress].cidHashes.add(cidHash);
     }
 
@@ -148,7 +148,7 @@ contract UserStorage is ExternalStorage, IUserStorage {
 
     function getFileItem(address userAddress, string calldata cid) external view returns (string memory, uint256, uint256, string memory) {
         bytes32 cidHash = keccak256(bytes(cid));
-        FileItem storage file = files[userAddress][cidHash];
+        File storage file = files[userAddress][cidHash];
         return (file.cid, file.createTime, file.duration, file.ext);
     }
 

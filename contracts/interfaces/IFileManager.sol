@@ -1,7 +1,7 @@
 pragma solidity ^0.5.2;
 
-interface IFile {
-    function addFile(string calldata cid, address userAddress) external returns (bool);
+interface IFileManager {
+    function addFile(string calldata cid, address userAddress) external returns (bool waitCallback);
     function onNodeAddFileFinish(address nodeAddress, address userAddress, string calldata cid, uint256 size) external;
     function onAddFileFail(address userAddress, string calldata cid) external;
 

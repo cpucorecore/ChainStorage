@@ -14,13 +14,13 @@ contract NodeStorage is ExternalStorage, INodeStorage {
     using EnumerableSet for EnumerableSet.AddressSet;
     using DoubleEndedQueue for DoubleEndedQueue.Uint256Deque;
 
-    struct NodeItem {
+    struct Node {
         uint256 status;
         StorageSpaceManager.StorageSpace storageSpace;
         string ext;
     }
 
-    mapping(address => NodeItem) private nodes;
+    mapping(address => Node) private nodes;
     EnumerableSet.AddressSet private nodeAddresses;
     EnumerableSet.AddressSet private onlineNodeAddresses;
     mapping(string => uint256) private cid2addFileFailedCount;
@@ -31,7 +31,7 @@ contract NodeStorage is ExternalStorage, INodeStorage {
     // write functions
     function newNode(address nodeAddress, uint256 storageTotal, string calldata ext) external {
         mustManager(managerName);
-        nodes[nodeAddress] = NodeItem(NodeRegistered, StorageSpaceManager.StorageSpace(0, storageTotal), ext);
+        nodes[nodeAddress] = Node(NodeRegistered, StorageSpaceManager.StorageSpace(0, storageTotal), ext);
         nodeAddresses.add(nodeAddress);
     }
 

@@ -1,20 +1,20 @@
 pragma solidity ^0.5.2;
 
 import "../interfaces/storages/INodeStorage.sol";
-import "../interfaces/IFile.sol";
-import "../interfaces/ITask.sol";
+import "../interfaces/IFileManager.sol";
+import "../interfaces/ITaskManager.sol";
 
 library NodeSelector {
     function _NodeStorage(address nodeStorageAddress) internal pure returns (INodeStorage) {
         return INodeStorage(nodeStorageAddress);
     }
 
-    function _File(address fileAddress) internal pure returns (IFile) {
-        return IFile(fileAddress);
+    function _File(address fileAddress) internal pure returns (IFileManager) {
+        return IFileManager(fileAddress);
     }
 
-    function _Task(address taskAddress) internal pure returns (ITask) {
-        return ITask(taskAddress);
+    function _Task(address taskAddress) internal pure returns (ITaskManager) {
+        return ITaskManager(taskAddress);
     }
 
     function selectNodes(address nodeStorageAddress, uint256 count) internal view returns (address[] memory nodes, bool success) {

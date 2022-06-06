@@ -2,11 +2,11 @@ pragma solidity ^0.5.2;
 
 import "./base/Importable.sol";
 import "./base/ExternalStorable.sol";
-import "./interfaces/ITask.sol";
+import "./interfaces/ITaskManager.sol";
 import "./interfaces/storages/ITaskStorage.sol";
-import "./interfaces/INode.sol";
+import "./interfaces/INodeManager.sol";
 
-contract Task is Importable, ExternalStorable, ITask {
+contract TaskManager is Importable, ExternalStorable, ITaskManager {
     event TaskIssued(address indexed nodeAddress, uint256 indexed tid);
     event TaskStatusChanged(uint256 tid, address indexed nodeAddress, uint256 action, uint256 from, uint256 to);
 
@@ -25,8 +25,8 @@ contract Task is Importable, ExternalStorable, ITask {
         return ITaskStorage(getStorage());
     }
 
-    function _Node() private view returns (INode) {
-        return INode(requireAddress(CONTRACT_NODE));
+    function _Node() private view returns (INodeManager) {
+        return INodeManager(requireAddress(CONTRACT_NODE));
     }
 
     function issueTask(uint256 action, address userAddress, string calldata cid, address nodeAddress, bool noCallback) external returns (uint256) {

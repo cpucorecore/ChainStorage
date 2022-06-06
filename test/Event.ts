@@ -8,9 +8,9 @@ import {
   takeSnapshot,
   revertToSnapshot,
   users,
-  user,
+  userManager,
   userAddresses,
-  task,
+  taskManager,
   nodeAddresses,
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
@@ -37,15 +37,15 @@ describe("Event", function () {
     await expect(
       chainStorage.connect(user1).userAddFile(Cid, Duration, FileExt)
     )
-      .to.emit(user, "UserAction")
+      .to.emit(userManager, "UserAction")
       .withArgs(user1Address, 0, Cid)
-      .to.emit(task, "TaskIssued")
+      .to.emit(taskManager, "TaskIssued")
       .withArgs(node1Address, 1)
-      .to.emit(task, "TaskIssued")
+      .to.emit(taskManager, "TaskIssued")
       .withArgs(node2Address, 2)
-      .to.emit(task, "TaskStatusChanged")
+      .to.emit(taskManager, "TaskStatusChanged")
       .withArgs(1, node1Address, 0, 0, 1)
-      .to.emit(task, "TaskStatusChanged")
+      .to.emit(taskManager, "TaskStatusChanged")
       .withArgs(2, node2Address, 0, 0, 1);
   });
 });

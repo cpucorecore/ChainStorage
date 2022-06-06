@@ -8,13 +8,13 @@ import "./lib/Paging.sol";
 contract FileStorage is ExternalStorage, IFileStorage {
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    struct FileItem {
+    struct File {
         bool exist;
         EnumerableSet.AddressSet users;
         EnumerableSet.AddressSet nodes;
     }
 
-    mapping(string=>FileItem) private cid2fileItem;
+    mapping(string=> File) private cid2fileItem;
     mapping(bytes32=>string) private cidHash2cid;
     mapping(string=>uint256) private cid2size;
     uint256 private totalSize;
@@ -31,7 +31,7 @@ contract FileStorage is ExternalStorage, IFileStorage {
 
         EnumerableSet.AddressSet memory users;
         EnumerableSet.AddressSet memory nodes;
-        cid2fileItem[cid] = FileItem(true, users, nodes);
+        cid2fileItem[cid] = File(true, users, nodes);
 
         bytes32 cidHash = keccak256(bytes(cid));
         cidHash2cid[cidHash] = cid;

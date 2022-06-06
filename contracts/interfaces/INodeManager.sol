@@ -1,6 +1,6 @@
 pragma solidity ^0.5.2;
 
-interface INode {
+interface INodeManager {
     function register(address nodeAddress, uint256 storageTotal, string calldata ext) external;
     function setExt(address nodeAddress, string calldata ext) external;
     function setStorageTotal(address nodeAddress, uint256 storageTotal) external;

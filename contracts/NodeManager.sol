@@ -3,14 +3,14 @@ pragma experimental ABIEncoderV2; // use this can make contract size smaller
 
 import "./base/Importable.sol";
 import "./base/ExternalStorable.sol";
-import "./interfaces/INode.sol";
+import "./interfaces/INodeManager.sol";
 import "./interfaces/storages/INodeStorage.sol";
 import "./interfaces/ISetting.sol";
-import "./interfaces/ITask.sol";
-import "./interfaces/IFile.sol";
+import "./interfaces/ITaskManager.sol";
+import "./interfaces/IFileManager.sol";
 import "./lib/NodeSelector.sol";
 
-contract Node is Importable, ExternalStorable, INode {
+contract NodeManager is Importable, ExternalStorable, INodeManager {
     using NodeSelector for address;
 
     event NodeStatusChanged(address indexed addr, uint256 from, uint256 to);
@@ -34,12 +34,12 @@ contract Node is Importable, ExternalStorable, INode {
         return ISetting(requireAddress(CONTRACT_SETTING));
     }
 
-    function _Task() private view returns (ITask) {
-        return ITask(requireAddress(CONTRACT_TASK));
+    function _Task() private view returns (ITaskManager) {
+        return ITaskManager(requireAddress(CONTRACT_TASK));
     }
 
-    function _File() private view returns (IFile) {
-        return IFile(requireAddress(CONTRACT_FILE));
+    function _File() private view returns (IFileManager) {
+        return IFileManager(requireAddress(CONTRACT_FILE));
     }
 
     function register(address nodeAddress, uint256 storageTotal, string calldata ext) external {

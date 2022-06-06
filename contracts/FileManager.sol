@@ -2,13 +2,13 @@ pragma solidity ^0.5.2;
 
 import "./base/Importable.sol";
 import "./base/ExternalStorable.sol";
-import "./interfaces/IFile.sol";
+import "./interfaces/IFileManager.sol";
 import "./interfaces/storages/IFileStorage.sol";
-import "./interfaces/IUser.sol";
-import "./interfaces/INode.sol";
-import "./interfaces/ITask.sol";
+import "./interfaces/IUserManager.sol";
+import "./interfaces/INodeManager.sol";
+import "./interfaces/ITaskManager.sol";
 
-contract File is Importable, ExternalStorable, IFile {
+contract FileManager is Importable, ExternalStorable, IFileManager {
     constructor(IResolver _resolver) public Importable(_resolver) {
         setContractName(CONTRACT_FILE);
         imports = [
@@ -22,29 +22,31 @@ contract File is Importable, ExternalStorable, IFile {
         return IFileStorage(getStorage());
     }
 
-    function _User() private view returns (IUser) {
-        return IUser(requireAddress(CONTRACT_USER));
+    function _User() private view returns (IUserManager) {
+        return IUserManager(requireAddress(CONTRACT_USER));
     }
 
-    function _Node() private view returns (INode) {
-        return INode(requireAddress(CONTRACT_NODE));
+    function _Node() private view returns (INodeManager) {
+        return INodeManager(requireAddress(CONTRACT_NODE));
     }
 
-    function _Task() private view returns (ITask) {
-        return ITask(requireAddress(CONTRACT_TASK));
+    function _Task() private view returns (ITaskManager) {
+        return ITaskManager(requireAddress(CONTRACT_TASK));
     }
 
-    function addFile(string calldata cid, address userAddress) external returns (bool exist) {
+
+    function addFile(string calldata cid, address userAddress) external returns (bool waitCallback) {
         mustAddress(CONTRACT_USER);
 
-        if(!_Storage().exist(cid)) {
+        waitCallback = false;
+
+        if (!_Storage().exist(cid)) { // TODO file.exist(cid) == true but file may add failed, should use file.status to judge
             _Storage().newFile(cid);
             _Node().addFile(userAddress, cid);
-        } else {
-            exist = true;
+            waitCallback = true;
         }
 
-        if(!_Storage().userExist(cid, userAddress)) {
+        if (!_Storage().userExist(cid, userAddress)) {
             _Storage().addUser(cid, userAddress);
         }
     }

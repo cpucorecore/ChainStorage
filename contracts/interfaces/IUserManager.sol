@@ -1,6 +1,6 @@
 pragma solidity ^0.5.2;
 
-interface IUser {
+interface IUserManager {
     function register(address userAddress, string calldata ext) external;
     function setExt(address userAddress, string calldata ext) external;
     function setStorageTotal(address userAddress, uint256 size) external;

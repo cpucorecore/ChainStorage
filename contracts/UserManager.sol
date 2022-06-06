@@ -2,12 +2,12 @@ pragma solidity ^0.5.2;
 
 import "./base/Importable.sol";
 import "./base/ExternalStorable.sol";
-import "./interfaces/IUser.sol";
+import "./interfaces/IUserManager.sol";
 import "./interfaces/storages/IUserStorage.sol";
 import "./interfaces/ISetting.sol";
-import "./interfaces/IFile.sol";
+import "./interfaces/IFileManager.sol";
 
-contract User is Importable, ExternalStorable, IUser {
+contract UserManager is Importable, ExternalStorable, IUserManager {
     event UserAction(address indexed userAddress, uint256 action, string cid);
     event FileAdded(address indexed userAddress, string cid);
     event FileAddFailed(address indexed userAddress, string cid);
@@ -30,8 +30,8 @@ contract User is Importable, ExternalStorable, IUser {
         return ISetting(requireAddress(CONTRACT_SETTING));
     }
 
-    function _File() private view returns (IFile) {
-        return IFile(requireAddress(CONTRACT_FILE));
+    function _File() private view returns (IFileManager) {
+        return IFileManager(requireAddress(CONTRACT_FILE));
     }
 
     function register(address userAddress, string calldata ext) external {
@@ -62,20 +62,22 @@ contract User is Importable, ExternalStorable, IUser {
 
     function addFile(address userAddress, string calldata cid, uint256 duration, string calldata ext) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
+
         require(_Storage().exist(userAddress), "U:user not exist");
-        require(!_Storage().fileExist(userAddress, cid), "U:file exist");
+        require(!_Storage().fileExist(userAddress, cid), "U:file exist"); // TODO: user have this file, but File may add file failed
         require(_Storage().availableSpace(userAddress) > 0, "U:storage space not enough");
 
-        emit UserAction(userAddress, Add, cid);
-
-        bool exist = _File().addFile(cid, userAddress);
-        if(exist) {
+        bool waitCallback = _File().addFile(cid, userAddress);
+        if (!waitCallback) {
             uint256 size = _File().getSize(cid);
             require(size > 0, "U:file size zero, file in processing, please wait a moment and try again");
             _Storage().useStorage(userAddress, size, true);
             emit FileAdded(userAddress, cid);
         }
+
         _Storage().addFile(userAddress, cid, duration, ext);
+
+        emit UserAction(userAddress, Add, cid);
     }
 
     function onAddFileFinish(address userAddress, string calldata cid, uint256 size) external {

@@ -10,9 +10,9 @@ import {
   MonitorStorage,
   NodeSelectorForTest,
   NodeStorage,
-  Task,
+  TaskManager,
   TaskStorage,
-  User,
+  UserManager,
   UserStorage,
   // eslint-disable-next-line node/no-missing-import
 } from "../typechain";
@@ -49,9 +49,9 @@ export let chainStorage: ChainStorage;
 export let nodeStorage: NodeStorage;
 export let fileStorage: FileStorage;
 export let monitorStorage: MonitorStorage;
-export let user: User;
+export let userManager: UserManager;
 export let userStorage: UserStorage;
-export let task: Task;
+export let taskManager: TaskManager;
 export let taskStorage: TaskStorage;
 
 export const users: Signer[] = [];
@@ -98,15 +98,15 @@ export async function prepareContext(
   // setting setStorage
   await setting.setStorage(settingStorage.address);
   // deploy File
-  const File = await ethers.getContractFactory("File");
-  const file = await File.deploy(resolver.address);
-  await file.deployed();
+  const FileManager = await ethers.getContractFactory("FileManager");
+  const fileManager = await FileManager.deploy(resolver.address);
+  await fileManager.deployed();
   // deploy FileStorage
   const FileStorage = await ethers.getContractFactory("FileStorage");
-  fileStorage = await FileStorage.deploy(file.address);
+  fileStorage = await FileStorage.deploy(fileManager.address);
   await fileStorage.deployed();
-  // file setStorage
-  await file.setStorage(fileStorage.address);
+  // fileManager setStorage
+  await fileManager.setStorage(fileStorage.address);
   // deploy Monitor
   const Monitor = await ethers.getContractFactory("Monitor");
   const monitor = await Monitor.deploy(resolver.address);
@@ -118,35 +118,35 @@ export async function prepareContext(
   // monitor setStorage
   await monitor.setStorage(monitorStorage.address);
   // deploy User
-  const User = await ethers.getContractFactory("User");
-  user = await User.deploy(resolver.address);
-  await user.deployed();
+  const UserManager = await ethers.getContractFactory("UserManager");
+  userManager = await UserManager.deploy(resolver.address);
+  await userManager.deployed();
   // deploy UserStorage
   const UserStorage = await ethers.getContractFactory("UserStorage");
-  userStorage = await UserStorage.deploy(user.address);
+  userStorage = await UserStorage.deploy(userManager.address);
   await userStorage.deployed();
   // user setStorage
-  await user.setStorage(userStorage.address);
+  await userManager.setStorage(userStorage.address);
   // deploy Node
-  const Node = await ethers.getContractFactory("Node");
-  const node = await Node.deploy(resolver.address);
-  await node.deployed();
+  const NodeManager = await ethers.getContractFactory("NodeManager");
+  const nodeManager = await NodeManager.deploy(resolver.address);
+  await nodeManager.deployed();
   // deploy NodeStorage
   const NodeStorage = await ethers.getContractFactory("NodeStorage");
-  nodeStorage = await NodeStorage.deploy(node.address);
+  nodeStorage = await NodeStorage.deploy(nodeManager.address);
   await nodeStorage.deployed();
-  // node setStorage
-  await node.setStorage(nodeStorage.address);
+  // nodeManager setStorage
+  await nodeManager.setStorage(nodeStorage.address);
   // deploy Task
-  const Task = await ethers.getContractFactory("Task");
-  task = await Task.deploy(resolver.address);
-  await task.deployed();
+  const TaskManager = await ethers.getContractFactory("TaskManager");
+  taskManager = await TaskManager.deploy(resolver.address);
+  await taskManager.deployed();
   // deploy TaskStorage
   const TaskStorage = await ethers.getContractFactory("TaskStorage");
-  taskStorage = await TaskStorage.deploy(task.address);
+  taskStorage = await TaskStorage.deploy(taskManager.address);
   await taskStorage.deployed();
   // task setStorage
-  await task.setStorage(taskStorage.address);
+  await taskManager.setStorage(taskStorage.address);
   // deploy ChainStorage
   const ChainStorage = await ethers.getContractFactory("ChainStorage");
   chainStorage = await ChainStorage.deploy();
@@ -164,20 +164,20 @@ export async function prepareContext(
   deployerAddress = await deployer.getAddress();
   await resolver.setAddress(string2bytes32("Admin"), deployerAddress);
   await resolver.setAddress(string2bytes32("Setting"), setting.address);
-  await resolver.setAddress(string2bytes32("File"), file.address);
+  await resolver.setAddress(string2bytes32("File"), fileManager.address);
   await resolver.setAddress(string2bytes32("Monitor"), monitor.address);
-  await resolver.setAddress(string2bytes32("User"), user.address);
-  await resolver.setAddress(string2bytes32("Node"), node.address);
-  await resolver.setAddress(string2bytes32("Task"), task.address);
+  await resolver.setAddress(string2bytes32("User"), userManager.address);
+  await resolver.setAddress(string2bytes32("Node"), nodeManager.address);
+  await resolver.setAddress(string2bytes32("Task"), taskManager.address);
   await resolver.setAddress(
     string2bytes32("ChainStorage"),
     chainStorage.address
   );
   // refreshCache
-  await file.refreshCache();
-  await user.refreshCache();
-  await node.refreshCache();
-  await task.refreshCache();
+  await fileManager.refreshCache();
+  await userManager.refreshCache();
+  await nodeManager.refreshCache();
+  await taskManager.refreshCache();
   await monitor.refreshCache();
   await chainStorage.refreshCache();
 
@@ -215,7 +215,7 @@ export async function prepareContext(
       .connect(accounts[i])
       .nodeRegister(NodeStorageTotal, NodeExt);
   }
-  // node online
+  // nodeManager online
   for (
     let i = accountNumber - 1;
     i > accountNumber - 1 - onlineNodeNumber;

@@ -8,7 +8,7 @@ contract TaskStorage is ExternalStorage, ITaskStorage {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    struct TaskItem {
+    struct Task {
         address user;
         uint256 action;
         address node;
@@ -37,7 +37,7 @@ contract TaskStorage is ExternalStorage, ITaskStorage {
     }
 
     uint256 private currentTid;
-    mapping(uint256=>TaskItem) private tid2taskItem;
+    mapping(uint256=> Task) private tid2taskItem;
     mapping(uint256=>TaskState) private tid2taskState;
     mapping(uint256=>AddFileTaskProgress) private tid2addFileProgress;
     mapping(address=>EnumerableSet.Bytes32Set) private node2addFileCidHashes;
@@ -49,7 +49,7 @@ contract TaskStorage is ExternalStorage, ITaskStorage {
         mustManager(managerName);
         currentTid = currentTid.add(1);
 
-        tid2taskItem[currentTid] = TaskItem(userAddress, action, nodeAddress, noCallback, cid);
+        tid2taskItem[currentTid] = Task(userAddress, action, nodeAddress, noCallback, cid);
         tid2taskState[currentTid] = TaskState(TaskCreated, block.number, now, 0, 0, 0, 0, 0);
         if(Add == action) {
             tid2addFileProgress[currentTid] = AddFileTaskProgress(0, 0, 0, 0, 0, 0);
@@ -65,7 +65,7 @@ contract TaskStorage is ExternalStorage, ITaskStorage {
     }
 
     function getTask(uint256 tid) external view returns (address, uint256, address, bool, string memory) {
-        TaskItem storage task = tid2taskItem[tid];
+        Task storage task = tid2taskItem[tid];
         return (task.user, task.action, task.node, task.noCallback, task.cid);
     }
 
@@ -146,7 +146,7 @@ contract TaskStorage is ExternalStorage, ITaskStorage {
             tid2taskState[tid].timeoutTime = time;
         }
 
-        TaskItem storage task = tid2taskItem[tid];
+        Task storage task = tid2taskItem[tid];
         if(Add == task.action && TaskAccepted != status) {
             bytes32 cidHash = keccak256(bytes(task.cid));
             node2addFileCidHashes[task.node].remove(cidHash);
