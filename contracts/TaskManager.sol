@@ -10,14 +10,14 @@ contract TaskManager is Importable, ExternalStorable, ITaskManager {
     event TaskIssued(address indexed nodeAddress, uint256 indexed tid);
     event TaskStatusChanged(uint256 tid, address indexed nodeAddress, uint256 action, uint256 from, uint256 to);
 
-    bytes32[] private ISSUABLE_CONTRACTS = [CONTRACT_NODE, CONTRACT_FILE];
+    bytes32[] private ISSUABLE_CONTRACTS = [CONTRACT_NODE_MANAGER, CONTRACT_FILE_MANAGER];
 
     constructor(IResolver _resolver) public Importable(_resolver) {
-        setContractName(CONTRACT_TASK);
+        setContractName(CONTRACT_TASK_MANAGER);
         imports = [
-            CONTRACT_NODE,
-            CONTRACT_FILE,
-            CONTRACT_CHAIN_STORAGE
+        CONTRACT_NODE_MANAGER,
+        CONTRACT_FILE_MANAGER,
+        CONTRACT_CHAIN_STORAGE
         ];
     }
 
@@ -26,7 +26,7 @@ contract TaskManager is Importable, ExternalStorable, ITaskManager {
     }
 
     function _Node() private view returns (INodeManager) {
-        return INodeManager(requireAddress(CONTRACT_NODE));
+        return INodeManager(requireAddress(CONTRACT_NODE_MANAGER));
     }
 
     function issueTask(uint256 action, address userAddress, string calldata cid, address nodeAddress, bool noCallback) external returns (uint256) {
@@ -57,7 +57,7 @@ contract TaskManager is Importable, ExternalStorable, ITaskManager {
     }
 
     function finishTask(address nodeAddress, uint256 tid) external {
-        mustAddress(CONTRACT_NODE);
+        mustAddress(CONTRACT_NODE_MANAGER);
         _checkTaskExist(tid);
 
         (uint256 status,) = _Storage().getStatusAndTime(tid);
@@ -70,7 +70,7 @@ contract TaskManager is Importable, ExternalStorable, ITaskManager {
     }
 
     function failTask(address nodeAddress, uint256 tid) external {
-        mustAddress(CONTRACT_NODE);
+        mustAddress(CONTRACT_NODE_MANAGER);
         _checkTaskExist(tid);
 
         (,uint256 action, address node,,) = _Storage().getTask(tid);
@@ -85,7 +85,7 @@ contract TaskManager is Importable, ExternalStorable, ITaskManager {
     }
 
     function acceptTaskTimeout(uint256 tid) external {
-        mustAddress(CONTRACT_NODE);
+        mustAddress(CONTRACT_NODE_MANAGER);
         _checkTaskExist(tid);
 
         (,uint256 action, address node,,) = _Storage().getTask(tid);
@@ -97,7 +97,7 @@ contract TaskManager is Importable, ExternalStorable, ITaskManager {
     }
 
     function taskTimeout(uint256 tid) external {
-        mustAddress(CONTRACT_NODE);
+        mustAddress(CONTRACT_NODE_MANAGER);
         _checkTaskExist(tid);
 
         (uint256 status,) = _Storage().getStatusAndTime(tid);

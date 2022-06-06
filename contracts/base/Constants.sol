@@ -5,10 +5,10 @@ contract Constants {
     bytes32 internal constant CONTRACT_SETTING = 'Setting';
     bytes32 internal constant CONTRACT_CHAIN_STORAGE = 'ChainStorage';
 
-    bytes32 internal constant CONTRACT_FILE = 'File';
-    bytes32 internal constant CONTRACT_USER = 'User';
-    bytes32 internal constant CONTRACT_NODE = 'Node';
-    bytes32 internal constant CONTRACT_TASK = 'Task';
+    bytes32 internal constant CONTRACT_FILE_MANAGER = 'FileManager';
+    bytes32 internal constant CONTRACT_USER_MANAGER = 'UserManager';
+    bytes32 internal constant CONTRACT_NODE_MANAGER = 'NodeManager';
+    bytes32 internal constant CONTRACT_TASK_MANAGER = 'TaskManager';
     bytes32 internal constant CONTRACT_MONITOR = 'Monitor';
 
     bytes32 internal constant ACCOUNT_ADMIN = 'Admin';

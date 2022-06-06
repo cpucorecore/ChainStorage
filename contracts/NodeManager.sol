@@ -16,13 +16,13 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
     event NodeStatusChanged(address indexed addr, uint256 from, uint256 to);
 
     constructor(IResolver _resolver) public Importable(_resolver) {
-        setContractName(CONTRACT_NODE);
+        setContractName(CONTRACT_NODE_MANAGER);
         imports = [
-            CONTRACT_SETTING,
-            CONTRACT_TASK,
-            CONTRACT_FILE,
-            CONTRACT_MONITOR,
-            CONTRACT_CHAIN_STORAGE
+        CONTRACT_SETTING,
+        CONTRACT_TASK_MANAGER,
+        CONTRACT_FILE_MANAGER,
+        CONTRACT_MONITOR,
+        CONTRACT_CHAIN_STORAGE
         ];
     }
 
@@ -35,11 +35,11 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
     }
 
     function _Task() private view returns (ITaskManager) {
-        return ITaskManager(requireAddress(CONTRACT_TASK));
+        return ITaskManager(requireAddress(CONTRACT_TASK_MANAGER));
     }
 
     function _File() private view returns (IFileManager) {
-        return IFileManager(requireAddress(CONTRACT_FILE));
+        return IFileManager(requireAddress(CONTRACT_FILE_MANAGER));
     }
 
     function register(address nodeAddress, uint256 storageTotal, string calldata ext) external {
@@ -104,7 +104,7 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
     }
 
     function addFile(address userAddress, string calldata cid) external {
-        mustAddress(CONTRACT_FILE);
+        mustAddress(CONTRACT_FILE_MANAGER);
 
         uint256 replica = _Setting().getReplica();
         require(0 != replica, "N:replica is 0");
@@ -213,13 +213,13 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
 
     function _retryAddFileTask(address userAddress, string memory cid, address excludedAddress) private {
         address nodeStorageAddress = getStorage();
-        (address node, bool success) = nodeStorageAddress.selectOneNode(requireAddress(CONTRACT_FILE), requireAddress(CONTRACT_TASK), excludedAddress, cid);
+        (address node, bool success) = nodeStorageAddress.selectOneNode(requireAddress(CONTRACT_FILE_MANAGER), requireAddress(CONTRACT_TASK_MANAGER), excludedAddress, cid);
         require(success, "N:no available node");
         _Task().issueTask(Add, userAddress, cid, node, false);
     }
 
     function taskIssuedCallback(address nodeAddress, uint256 tid) external {
-        mustAddress(CONTRACT_TASK);
+        mustAddress(CONTRACT_TASK_MANAGER);
         _Storage().pushTaskBack(nodeAddress, tid);
     }
 }

@@ -18,10 +18,10 @@ contract Monitor is Importable, ExternalStorable, IMonitor {
     constructor(IResolver _resolver) public Importable(_resolver) {
         setContractName(CONTRACT_MONITOR);
         imports = [
-            CONTRACT_TASK,
-            CONTRACT_NODE,
-            CONTRACT_SETTING,
-            CONTRACT_CHAIN_STORAGE
+        CONTRACT_TASK_MANAGER,
+        CONTRACT_NODE_MANAGER,
+        CONTRACT_SETTING,
+        CONTRACT_CHAIN_STORAGE
         ];
     }
 
@@ -30,11 +30,11 @@ contract Monitor is Importable, ExternalStorable, IMonitor {
     }
 
     function _Task() private view returns (ITaskManager) {
-        return ITaskManager(requireAddress(CONTRACT_TASK));
+        return ITaskManager(requireAddress(CONTRACT_TASK_MANAGER));
     }
 
     function _Node() private view returns (INodeManager) {
-        return INodeManager(requireAddress(CONTRACT_NODE));
+        return INodeManager(requireAddress(CONTRACT_NODE_MANAGER));
     }
 
     function _Setting() private view returns (ISetting) {

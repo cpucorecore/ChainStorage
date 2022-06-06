@@ -14,11 +14,11 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
     event FileDeleted(address indexed userAddress, string cid);
 
     constructor(IResolver _resolver) public Importable(_resolver) {
-        setContractName(CONTRACT_USER);
+        setContractName(CONTRACT_USER_MANAGER);
         imports = [
-            CONTRACT_SETTING,
-            CONTRACT_FILE,
-            CONTRACT_CHAIN_STORAGE
+        CONTRACT_SETTING,
+        CONTRACT_FILE_MANAGER,
+        CONTRACT_CHAIN_STORAGE
         ];
     }
 
@@ -31,7 +31,7 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
     }
 
     function _File() private view returns (IFileManager) {
-        return IFileManager(requireAddress(CONTRACT_FILE));
+        return IFileManager(requireAddress(CONTRACT_FILE_MANAGER));
     }
 
     function register(address userAddress, string calldata ext) external {
@@ -81,7 +81,7 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
     }
 
     function onAddFileFinish(address userAddress, string calldata cid, uint256 size) external {
-        mustAddress(CONTRACT_FILE);
+        mustAddress(CONTRACT_FILE_MANAGER);
         if(_Storage().fileExist(userAddress, cid)) {
             _Storage().useStorage(userAddress, size, false);
             emit FileAdded(userAddress, cid);
@@ -89,7 +89,7 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
     }
 
     function onAddFileFail(address userAddress, string calldata cid) external {
-        mustAddress(CONTRACT_FILE);
+        mustAddress(CONTRACT_FILE_MANAGER);
         _Storage().upInvalidAddFileCount(userAddress);
 
         emit FileAddFailed(userAddress, cid);
@@ -111,7 +111,7 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
     }
 
     function onDeleteFileFinish(address userAddress, string calldata cid, uint256 size) external {
-        mustAddress(CONTRACT_FILE);
+        mustAddress(CONTRACT_FILE_MANAGER);
         _Storage().deleteFile(userAddress, cid);
         _Storage().freeStorage(userAddress, size);
 

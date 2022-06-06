@@ -20,12 +20,12 @@ contract ChainStorage is Proxyable, Pausable, Importable {
         setContractName(CONTRACT_CHAIN_STORAGE);
 
         imports = [
-            CONTRACT_SETTING,
-            CONTRACT_USER,
-            CONTRACT_NODE,
-            CONTRACT_TASK,
-            CONTRACT_MONITOR,
-            ACCOUNT_ADMIN
+        CONTRACT_SETTING,
+        CONTRACT_USER_MANAGER,
+        CONTRACT_NODE_MANAGER,
+        CONTRACT_TASK_MANAGER,
+        CONTRACT_MONITOR,
+        ACCOUNT_ADMIN
         ];
     }
 
@@ -34,11 +34,11 @@ contract ChainStorage is Proxyable, Pausable, Importable {
     }
 
     function _User() private view returns (IUserManager) {
-        return IUserManager(requireAddress(CONTRACT_USER));
+        return IUserManager(requireAddress(CONTRACT_USER_MANAGER));
     }
 
     function _Node() private view returns (INodeManager) {
-        return INodeManager(requireAddress(CONTRACT_NODE));
+        return INodeManager(requireAddress(CONTRACT_NODE_MANAGER));
     }
 
     function _Monitor() private view returns (IMonitor) {
@@ -46,7 +46,7 @@ contract ChainStorage is Proxyable, Pausable, Importable {
     }
 
     function _Task() private view returns (ITaskManager) {
-        return ITaskManager(requireAddress(CONTRACT_TASK));
+        return ITaskManager(requireAddress(CONTRACT_TASK_MANAGER));
     }
 
     function userRegister(string calldata ext) external {

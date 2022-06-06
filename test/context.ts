@@ -164,11 +164,11 @@ export async function prepareContext(
   deployerAddress = await deployer.getAddress();
   await resolver.setAddress(string2bytes32("Admin"), deployerAddress);
   await resolver.setAddress(string2bytes32("Setting"), setting.address);
-  await resolver.setAddress(string2bytes32("File"), fileManager.address);
+  await resolver.setAddress(string2bytes32("FileManager"), fileManager.address);
   await resolver.setAddress(string2bytes32("Monitor"), monitor.address);
-  await resolver.setAddress(string2bytes32("User"), userManager.address);
-  await resolver.setAddress(string2bytes32("Node"), nodeManager.address);
-  await resolver.setAddress(string2bytes32("Task"), taskManager.address);
+  await resolver.setAddress(string2bytes32("UserManager"), userManager.address);
+  await resolver.setAddress(string2bytes32("NodeManager"), nodeManager.address);
+  await resolver.setAddress(string2bytes32("TaskManager"), taskManager.address);
   await resolver.setAddress(
     string2bytes32("ChainStorage"),
     chainStorage.address
