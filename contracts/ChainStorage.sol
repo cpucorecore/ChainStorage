@@ -33,11 +33,11 @@ contract ChainStorage is Proxyable, Pausable, Importable {
         return ISetting(requireAddress(CONTRACT_SETTING));
     }
 
-    function _User() private view returns (IUserManager) {
+    function _UserManager() private view returns (IUserManager) {
         return IUserManager(requireAddress(CONTRACT_USER_MANAGER));
     }
 
-    function _Node() private view returns (INodeManager) {
+    function _NodeManager() private view returns (INodeManager) {
         return INodeManager(requireAddress(CONTRACT_NODE_MANAGER));
     }
 
@@ -45,113 +45,113 @@ contract ChainStorage is Proxyable, Pausable, Importable {
         return IMonitor(requireAddress(CONTRACT_MONITOR));
     }
 
-    function _Task() private view returns (ITaskManager) {
+    function _TaskManager() private view returns (ITaskManager) {
         return ITaskManager(requireAddress(CONTRACT_TASK_MANAGER));
     }
 
     function userRegister(string calldata ext) external {
         _mustOnline();
         require(bytes(ext).length <= _Setting().getMaxUserExtLength(), "CS:user ext too long");
-        _User().register(msg.sender, ext);
+        _UserManager().register(msg.sender, ext);
     }
 
     function userSetExt(string calldata ext) external {
         _mustOnline();
         require(bytes(ext).length <= _Setting().getMaxUserExtLength(), "CS:user ext too long");
-        _User().setExt(msg.sender, ext);
+        _UserManager().setExt(msg.sender, ext);
     }
 
     function userSetStorageTotal(address addr, uint256 storageTotal) external {
         _mustOnline();
         mustAddress(ACCOUNT_ADMIN);
-        _User().setStorageTotal(addr, storageTotal);
+        _UserManager().setStorageTotal(addr, storageTotal);
     }
 
     function userDeRegister() external {
         _mustOnline();
-        _User().deRegister(msg.sender);
+        _UserManager().deRegister(msg.sender);
     }
 
     function userAddFile(string calldata cid, uint256 duration, string calldata ext) external {
         _mustOnline();
         require(bytes(ext).length <= _Setting().getMaxFileExtLength(), "CS:file ext too long");
         require(bytes(cid).length <= _Setting().getMaxCidLength(), "CS:cid too long");
-        _User().addFile(msg.sender, cid, duration, ext);
+        _UserManager().addFile(msg.sender, cid, duration, ext);
     }
 
     function userSetFileExt(string calldata cid, string calldata ext) external {
         _mustOnline();
         require(bytes(ext).length <= _Setting().getMaxFileExtLength(), "CS:file ext too long");
-        _User().setFileExt(msg.sender, cid, ext);
+        _UserManager().setFileExt(msg.sender, cid, ext);
     }
 
     function userSetFileDuration(string calldata cid, uint256 duration) external {
         _mustOnline();
-        _User().setFileDuration(msg.sender, cid, duration);
+        _UserManager().setFileDuration(msg.sender, cid, duration);
     }
 
     function userDeleteFile(string calldata cid) external {
         _mustOnline();
         require(bytes(cid).length <= _Setting().getMaxCidLength(), "CS:cid too long");
-        _User().deleteFile(msg.sender, cid);
+        _UserManager().deleteFile(msg.sender, cid);
     }
 
     function nodeRegister(uint256 storageTotal, string calldata ext) external {
         _mustOnline();
         require(bytes(ext).length <= _Setting().getMaxNodeExtLength(), "CS:node ext too long");
         require(storageTotal > 0, "CS:node storageTotal must>0");
-        _Node().register(msg.sender, storageTotal, ext);
+        _NodeManager().register(msg.sender, storageTotal, ext);
     }
 
     function nodeSetExt(string calldata ext) external {
         _mustOnline();
         require(bytes(ext).length <= _Setting().getMaxNodeExtLength(), "CS:node ext too long");
-        _Node().setExt(msg.sender, ext);
+        _NodeManager().setExt(msg.sender, ext);
     }
 
     function nodeSetStorageTotal(uint256 storageTotal) external {
         _mustOnline();
-        _Node().setStorageTotal(msg.sender, storageTotal);
+        _NodeManager().setStorageTotal(msg.sender, storageTotal);
     }
 
     function nodeDeRegister() external {
         _mustOnline();
-        _Node().deRegister(msg.sender);
+        _NodeManager().deRegister(msg.sender);
     }
 
     function nodeOnline() external {
         _mustOnline();
-        _Node().online(msg.sender);
+        _NodeManager().online(msg.sender);
     }
 
     function nodeMaintain() external {
         _mustOnline();
-        _Node().maintain(msg.sender);
+        _NodeManager().maintain(msg.sender);
     }
 
     function nodeAcceptTask(uint256 tid) external {
         _mustOnline();
-        _Task().acceptTask(msg.sender, tid);
+        _TaskManager().acceptTask(msg.sender, tid);
     }
 
     function nodeReportAddFileProgressBySize(uint256 tid, uint256 size) external {
         _mustOnline();
-        _Task().reportAddFileProgressBySize(msg.sender, tid, size);
+        _TaskManager().reportAddFileProgressBySize(msg.sender, tid, size);
     }
 
     function nodeReportAddFileProgressByPercentage(uint256 tid, uint256 percentage) external {
         _mustOnline();
-        _Task().reportAddFileProgressByPercentage(msg.sender, tid, percentage);
+        _TaskManager().reportAddFileProgressByPercentage(msg.sender, tid, percentage);
     }
 
     function nodeFinishTask(uint256 tid, uint256 size) external {
         _mustOnline();
-        _Node().finishTask(msg.sender, tid, size);
+        _NodeManager().finishTask(msg.sender, tid, size);
     }
 
     function nodeFailTask(uint256 tid) external {
         _mustOnline();
-        _Node().failTask(msg.sender, tid);
+        _NodeManager().failTask(msg.sender, tid);
     }
 
     function monitorRegister(string calldata ext) external {

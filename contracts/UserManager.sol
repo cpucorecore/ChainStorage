@@ -30,7 +30,7 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
         return ISetting(requireAddress(CONTRACT_SETTING));
     }
 
-    function _File() private view returns (IFileManager) {
+    function _FileManager() private view returns (IFileManager) {
         return IFileManager(requireAddress(CONTRACT_FILE_MANAGER));
     }
 
@@ -67,9 +67,9 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
         require(!_Storage().fileExist(userAddress, cid), "U:file exist"); // TODO: user have this file, but File may add file failed
         require(_Storage().availableSpace(userAddress) > 0, "U:storage space not enough");
 
-        bool waitCallback = _File().addFile(cid, userAddress);
+        bool waitCallback = _FileManager().addFile(cid, userAddress);
         if (!waitCallback) {
-            uint256 size = _File().getSize(cid);
+            uint256 size = _FileManager().getSize(cid);
             require(size > 0, "U:file size zero, file in processing, please wait a moment and try again");
             _Storage().useStorage(userAddress, size, true);
             emit FileAdded(userAddress, cid);
@@ -102,8 +102,8 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
 
         emit UserAction(userAddress, Delete, cid);
 
-        uint256 size = _File().getSize(cid);
-        bool finish = _File().deleteFile(cid, userAddress);
+        uint256 size = _FileManager().getSize(cid);
+        bool finish = _FileManager().deleteFile(cid, userAddress);
         if(finish) {
             _Storage().freeStorage(userAddress, size);
             emit FileDeleted(userAddress, cid);

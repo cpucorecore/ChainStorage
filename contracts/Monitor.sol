@@ -29,11 +29,11 @@ contract Monitor is Importable, ExternalStorable, IMonitor {
         return IMonitorStorage(getStorage());
     }
 
-    function _Task() private view returns (ITaskManager) {
+    function _TaskManager() private view returns (ITaskManager) {
         return ITaskManager(requireAddress(CONTRACT_TASK_MANAGER));
     }
 
-    function _Node() private view returns (INodeManager) {
+    function _NodeManager() private view returns (INodeManager) {
         return INodeManager(requireAddress(CONTRACT_NODE_MANAGER));
     }
 
@@ -72,7 +72,7 @@ contract Monitor is Importable, ExternalStorable, IMonitor {
         _Storage().addOnlineMonitor(monitorAddress);
 
         if(MonitorRegistered == status) {
-            uint256 currentTid = _Task().getCurrentTid();
+            uint256 currentTid = _TaskManager().getCurrentTid();
             _Storage().setFirstOnlineTid(monitorAddress, currentTid);
         }
     }
@@ -100,9 +100,9 @@ contract Monitor is Importable, ExternalStorable, IMonitor {
         mustAddress(CONTRACT_CHAIN_STORAGE);
         require(_Storage().exist(monitorAddress), "M:not exist");
         require(MonitorOnline == _Storage().getStatus(monitorAddress), "M:status not online");
-        require(_Task().exist(tid), "M:task not exist");
+        require(_TaskManager().exist(tid), "M:task not exist");
 
-        if(_Task().isOver(tid)) return false;
+        if(_TaskManager().isOver(tid)) return false;
 
         continueCheck = true;
         if(_isTaskAcceptTimeout(tid)) {
@@ -135,20 +135,20 @@ contract Monitor is Importable, ExternalStorable, IMonitor {
     function _reportTaskAcceptTimeout(address monitorAddress, uint256 tid) private {
         _Storage().addReport(monitorAddress, tid, ReportAcceptTimeout, now);
         _saveCurrentTid(monitorAddress, tid);
-        _Node().reportAcceptTaskTimeout(tid);
+        _NodeManager().reportAcceptTaskTimeout(tid);
         emit MonitorReport(monitorAddress, tid, ReportAcceptTimeout);
     }
 
     function _reportTaskTimeout(address monitorAddress, uint256 tid) private {
         _Storage().addReport(monitorAddress, tid, ReportTimeout, now);
         _saveCurrentTid(monitorAddress, tid);
-        _Node().reportTaskTimeout(tid);
+        _NodeManager().reportTaskTimeout(tid);
         emit MonitorReport(monitorAddress, tid, ReportTimeout);
     }
 
     function _isTaskAcceptTimeout(uint256 tid) private view returns (bool isTimeout) {
         uint256 acceptTimeout = _Setting().getTaskAcceptTimeout();
-        (uint256 status, uint256 statusTime) = _Task().getStatusAndTime(tid);
+        (uint256 status, uint256 statusTime) = _TaskManager().getStatusAndTime(tid);
 
         if((TaskCreated == status) && (now > statusTime.add(acceptTimeout))) {
             isTimeout = true;
@@ -156,12 +156,12 @@ contract Monitor is Importable, ExternalStorable, IMonitor {
     }
 
     function _isTaskTimeout(uint256 tid) private view returns (bool isTimeout) {
-        (uint256 status, uint256 statusTime) = _Task().getStatusAndTime(tid);
+        (uint256 status, uint256 statusTime) = _TaskManager().getStatusAndTime(tid);
         if(TaskAccepted != status) {
             return false;
         }
 
-        (,uint256 action,,,) = _Task().getTask(tid);
+        (,uint256 action,,,) = _TaskManager().getTask(tid);
         if(Add == action) {
             uint256 addFileTimeout = _Setting().getAddFileTaskTimeout();
             if(now > statusTime.add(addFileTimeout)) {
@@ -169,7 +169,7 @@ contract Monitor is Importable, ExternalStorable, IMonitor {
             }
 
             uint256 addFileProgressTimeout = _Setting().getAddFileProgressTimeout();
-            (uint256 progressTime,,,,,) = _Task().getAddFileTaskProgress(tid);
+            (uint256 progressTime,,,,,) = _TaskManager().getAddFileTaskProgress(tid);
             if(0 == progressTime) {
                 if(now > statusTime.add(addFileProgressTimeout)) {
                     return true;

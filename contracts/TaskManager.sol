@@ -25,7 +25,7 @@ contract TaskManager is Importable, ExternalStorable, ITaskManager {
         return ITaskStorage(getStorage());
     }
 
-    function _Node() private view returns (INodeManager) {
+    function _NodeManager() private view returns (INodeManager) {
         return INodeManager(requireAddress(CONTRACT_NODE_MANAGER));
     }
 
@@ -34,7 +34,7 @@ contract TaskManager is Importable, ExternalStorable, ITaskManager {
         uint256 tid = _Storage().newTask(userAddress, action, cid, nodeAddress, noCallback);
         emit TaskIssued(nodeAddress, tid);
         emit TaskStatusChanged(tid, nodeAddress, action, DefaultStatus, TaskCreated);
-        _Node().taskIssuedCallback(nodeAddress, tid);
+        _NodeManager().taskIssuedCallback(nodeAddress, tid);
         return tid;
     }
 

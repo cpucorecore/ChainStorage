@@ -22,18 +22,17 @@ contract FileManager is Importable, ExternalStorable, IFileManager {
         return IFileStorage(getStorage());
     }
 
-    function _User() private view returns (IUserManager) {
+    function _UserManager() private view returns (IUserManager) {
         return IUserManager(requireAddress(CONTRACT_USER_MANAGER));
     }
 
-    function _Node() private view returns (INodeManager) {
+    function _NodeManager() private view returns (INodeManager) {
         return INodeManager(requireAddress(CONTRACT_NODE_MANAGER));
     }
 
-    function _Task() private view returns (ITaskManager) {
+    function _TaskManager() private view returns (ITaskManager) {
         return ITaskManager(requireAddress(CONTRACT_TASK_MANAGER));
     }
-
 
     function addFile(string calldata cid, address userAddress) external returns (bool waitCallback) {
         mustAddress(CONTRACT_USER_MANAGER);
@@ -42,7 +41,7 @@ contract FileManager is Importable, ExternalStorable, IFileManager {
 
         if (!_Storage().exist(cid)) { // TODO file.exist(cid) == true but file may add failed, should use file.status to judge
             _Storage().newFile(cid);
-            _Node().addFile(userAddress, cid);
+            _NodeManager().addFile(userAddress, cid);
             waitCallback = true;
         }
 
@@ -56,7 +55,7 @@ contract FileManager is Importable, ExternalStorable, IFileManager {
 
         if(_Storage().exist(cid)) {
             if(_Storage().nodeEmpty(cid)) {
-                _User().onAddFileFinish(userAddress, cid, size);
+                _UserManager().onAddFileFinish(userAddress, cid, size);
                 _Storage().setSize(cid, size);
                 _Storage().upTotalSize(size);
             }
@@ -65,13 +64,13 @@ contract FileManager is Importable, ExternalStorable, IFileManager {
                 _Storage().addNode(cid, nodeAddress);
             }
         } else {
-            _Task().issueTask(Delete, userAddress, cid, nodeAddress, true);
+            _TaskManager().issueTask(Delete, userAddress, cid, nodeAddress, true);
         }
     }
 
     function onAddFileFail(address userAddress, string calldata cid) external {
         mustAddress(CONTRACT_NODE_MANAGER);
-        _User().onAddFileFail(userAddress, cid);
+        _UserManager().onAddFileFail(userAddress, cid);
     }
 
     function deleteFile(string calldata cid, address userAddress) external returns (bool finish) {
@@ -91,7 +90,7 @@ contract FileManager is Importable, ExternalStorable, IFileManager {
             } else {
                 address[] memory nodeAddresses = _Storage().getNodes(cid);
                 for(uint i=0; i< nodeAddresses.length; i++) {
-                    _Task().issueTask(Delete, userAddress, cid, nodeAddresses[i], false);
+                    _TaskManager().issueTask(Delete, userAddress, cid, nodeAddresses[i], false);
                 }
             }
         } else {
@@ -108,7 +107,7 @@ contract FileManager is Importable, ExternalStorable, IFileManager {
 
         if(_Storage().nodeEmpty(cid)) {
             uint256 size = _Storage().getSize(cid);
-            _User().onDeleteFileFinish(userAddress, cid, size);
+            _UserManager().onDeleteFileFinish(userAddress, cid, size);
             if(_Storage().userEmpty(cid)) {
                 _Storage().deleteFile(cid);
                 _Storage().downTotalSize(size);
