@@ -11,10 +11,6 @@ interface INodeStorage {
     function addOnlineNode(address nodeAddress) external;
     function deleteOnlineNode(address nodeAddress) external;
     function setStatus(address nodeAddress, uint256 status) external;
-    function resetAddFileFailedCount(string calldata cid) external;
-    function upAddFileFailedCount(string calldata cid) external returns (uint256);
-    function pushTaskBack(address nodeAddress, uint256 tid) external;
-    function popTaskFront(address nodeAddress) external;
 
     // read functions
     function exist(address nodeAddress) external view returns (bool);
@@ -28,7 +24,14 @@ interface INodeStorage {
     function getAllNodeAddresses(uint256 pageSize, uint256 pageNumber) external view returns (address[] memory, bool);
     function getAllOnlineNodeAddresses() external view returns (address[] memory);
     function getAllOnlineNodeAddresses(uint256 pageSize, uint256 pageNumber) external view returns (address[] memory, bool);
-    function getAddFileFailedCount(string calldata cid) external view returns (uint256);
-    function getTasks(address nodeAddress) external view returns (uint256[] memory);
-    function firstTaskInTaskQueue(address nodeAddress) external view returns (uint256);
+
+    function nodeCanAddFile(address nodeAddress, string calldata cid, uint256 size) external returns (uint256);
+    function isSizeConsistent(string calldata cid) external view returns (bool, uint256);
+    function getCanAddCidNodeAddresses(string calldata cid) external view returns (address[] memory);
+
+    function nodeAddFile(address nodeAddress, string calldata cid) external returns (bool);
+    function getNodeAddresses(string calldata cid) external view returns (address[] memory);
+
+    function nodeCanDeleteFile(address nodeAddress, string calldata cid) external returns (bool);
+    function nodeDeleteFile(address nodeAddress, string calldata cid) external returns (bool);
 }

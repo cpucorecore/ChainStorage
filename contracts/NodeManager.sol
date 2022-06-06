@@ -8,15 +8,19 @@ import "./interfaces/storages/INodeStorage.sol";
 import "./interfaces/ISetting.sol";
 import "./interfaces/ITaskManager.sol";
 import "./interfaces/IFileManager.sol";
-import "./lib/NodeSelector.sol";
 
 contract NodeManager is Importable, ExternalStorable, INodeManager {
-    using NodeSelector for address;
+    event NodeStatusChanged(address indexed nodeAddress, uint256 from, uint256 to);
 
-    event NodeStatusChanged(address indexed addr, uint256 from, uint256 to);
+    event TryRequestAddFile(string cid);
+    event RequestAddFile(string cid, uint256 tid);
+
+    event TryRequestDeleteFile(string cid, address[] nodeAddresses);
+    event RequestDeleteFile(string cid, uint256 tid);
 
     constructor(IResolver _resolver) public Importable(_resolver) {
         setContractName(CONTRACT_NODE_MANAGER);
+
         imports = [
         CONTRACT_SETTING,
         CONTRACT_TASK_MANAGER,
@@ -103,102 +107,56 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
         emit NodeStatusChanged(nodeAddress, status, NodeMaintain);
     }
 
-    function addFile(address userAddress, string calldata cid) external {
+    function addFile(string calldata cid) external {
         mustAddress(CONTRACT_FILE_MANAGER);
+        emit TryRequestAddFile(cid);
+    }
 
-        uint256 replica = _Setting().getReplica();
-        require(0 != replica, "N:replica is 0");
+    function nodeCanAddFile(address nodeAddress, string calldata cid, uint256 size) external {
+        uint256 count = _Storage().nodeCanAddFile(nodeAddress, cid, size);
+        if (count == _Setting().getReplica()) {
+            if (_Storage().isSizeConsistent(cid)) {
+                _FileManager().onBeginAddFile(cid, size);
+                address[] memory nodeAddresses = _Storage().getCanAddCidNodeAddresses(cid);
+                uint256 tid = _TaskManager().issueTask(Add, cid, nodeAddresses);
+                emit RequestAddFile(cid, tid);
+            }
+        }
+    }
 
-        (address[] memory nodeAddresses, bool success) = getStorage().selectNodes(replica);
-        require(success, "N:no available node");
+    function nodeAddFile(address nodeAddress, string calldata cid) external {
+        uint256 allNodeFinishAddFile = _Storage().nodeAddFile(cid, nodeAddress);
+        if (allNodeFinishAddFile) {
+            _FileManager().onEndAddFile(cid, _Storage().getNodeAddresses(cid));
+            // TODO: tell task node finish add file
+        }
+    }
 
-        for(uint256 i=0; i< nodeAddresses.length; i++) {
-            _TaskManager().issueTask(Add, userAddress, cid, nodeAddresses[i], false);
+    function deleteFile(string calldata cid) external {
+        mustAddress(CONTRACT_FILE_MANAGER);
+        address[] memory nodeAddresses = _Storage().getNodeAddresses(cid);
+        emit TryRequestDeleteFile(cid, nodeAddresses);
+    }
+
+    function nodeCanDeleteFile(address nodeAddress, string calldata cid) external {
+        bool allNodeCanDeleteFile = _Storage().nodeCanDeleteFile(nodeAddress, cid);
+        if (allNodeCanDeleteFile) {
+            _FileManager().onBeginDeleteFile(cid);
+            address[] memory nodeAddresses = _Storage().getNodeAddresses(cid);
+            uint256 tid = _TaskManager().issueTask(Delete, cid, nodeAddresses);
+            emit RequestDeleteFile(cid, tid);
+        }
+    }
+
+    function nodeDeleteFile(address nodeAddress, string calldata cid) external {
+        uint256 allNodeFinishDeleteFile = _Storage().nodeDeleteFile(cid, nodeAddress);
+        if (allNodeFinishDeleteFile) {
+            _FileManager().onEndDeleteFile(cid, _Storage().getNodeAddresses(cid));
         }
     }
 
     function _nodeMustExist(address nodeAddress) private view {
         require(_Storage().exist(nodeAddress), "N:node not exist");
-    }
-
-    function finishTask(address nodeAddress, uint256 tid, uint256 size) external {
-        mustAddress(CONTRACT_CHAIN_STORAGE);
-        require(_Storage().firstTaskInTaskQueue(nodeAddress) == tid, "N:must do task by queue");
-        (address userAddress, uint256 action,,bool noCallback, string memory cid) = _TaskManager().getTask(tid);
-
-        if(Add == action) {
-            _FileManager().onNodeAddFileFinish(nodeAddress, userAddress, cid, size);
-            _Storage().useStorage(nodeAddress, size);
-            _Storage().resetAddFileFailedCount(cid);
-        } else if(Delete == action) {
-            _Storage().freeStorage(nodeAddress, _FileManager().getSize(cid));
-            if(!noCallback) {
-                _FileManager().onNodeDeleteFileFinish(nodeAddress, userAddress, cid);
-            }
-        }
-
-        _TaskManager().finishTask(nodeAddress, tid);
-        _Storage().popTaskFront(nodeAddress);
-    }
-
-    function failTask(address nodeAddress, uint256 tid) external {
-        mustAddress(CONTRACT_CHAIN_STORAGE);
-        require(_Storage().firstTaskInTaskQueue(nodeAddress) == tid, "N:must do task by queue");
-        (address userAddress, uint256 action,,,string memory cid) = _TaskManager().getTask(tid);
-
-        uint256 maxAddFileFailedCount = _Setting().getMaxAddFileFailedCount();
-        uint256 addFileFailedCount = _Storage().upAddFileFailedCount(cid);
-        if(Add == action) {
-            _Storage().popTaskFront(nodeAddress);
-        }
-
-        if(addFileFailedCount >= maxAddFileFailedCount) {
-            _FileManager().onAddFileFail(userAddress, cid);
-            return;
-        }
-
-        if(Add == action) {
-            if(_FileManager().getNodeNumber(cid) < _Setting().getReplica()) {
-                _retryAddFileTask(userAddress, cid, nodeAddress);
-            }
-        }
-
-        _TaskManager().failTask(nodeAddress, tid);
-    }
-
-    function reportAcceptTaskTimeout(uint256 tid) external {
-        mustAddress(CONTRACT_MONITOR);
-        (address userAddress, uint256 action, address nodeAddress, , string memory cid) = _TaskManager().getTask(tid);
-        require(_Storage().firstTaskInTaskQueue(nodeAddress) == tid, "N:must do task by queue");
-        _offline(nodeAddress);
-        _TaskManager().acceptTaskTimeout(tid);
-        if(Add == action) {
-            if(_FileManager().getNodeNumber(cid) < _Setting().getReplica()) {
-                _retryAddFileTask(userAddress, cid, nodeAddress);
-            }
-            _Storage().popTaskFront(nodeAddress);
-        }
-    }
-
-    function reportTaskTimeout(uint256 tid) external {
-        mustAddress(CONTRACT_MONITOR);
-        (address userAddress, uint256 action, address nodeAddress, , string memory cid) = _TaskManager().getTask(tid);
-        require(_Storage().firstTaskInTaskQueue(nodeAddress) == tid, "N:must do task by queue");
-        _offline(nodeAddress);
-        _TaskManager().taskTimeout(tid);
-
-        if(Add == action) {
-            _Storage().popTaskFront(nodeAddress);
-            uint256 maxAddFileFailedCount = _Setting().getMaxAddFileFailedCount();
-            uint256 addFileFailedCount = _Storage().upAddFileFailedCount(cid);
-            if(addFileFailedCount >= maxAddFileFailedCount) {
-                _FileManager().onAddFileFail(userAddress, cid);
-                return;
-            }
-            if(_FileManager().getNodeNumber(cid) < _Setting().getReplica()) {
-                _retryAddFileTask(userAddress, cid, nodeAddress);
-            }
-        }
     }
 
     function _offline(address nodeAddress) private {
@@ -209,17 +167,5 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
         _Storage().deleteOnlineNode(nodeAddress);
 
         emit NodeStatusChanged(nodeAddress, status, NodeOffline);
-    }
-
-    function _retryAddFileTask(address userAddress, string memory cid, address excludedAddress) private {
-        address nodeStorageAddress = getStorage();
-        (address node, bool success) = nodeStorageAddress.selectOneNode(requireAddress(CONTRACT_FILE_MANAGER), requireAddress(CONTRACT_TASK_MANAGER), excludedAddress, cid);
-        require(success, "N:no available node");
-        _TaskManager().issueTask(Add, userAddress, cid, node, false);
-    }
-
-    function taskIssuedCallback(address nodeAddress, uint256 tid) external {
-        mustAddress(CONTRACT_TASK_MANAGER);
-        _Storage().pushTaskBack(nodeAddress, tid);
     }
 }

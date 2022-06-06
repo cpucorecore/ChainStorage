@@ -38,6 +38,10 @@ contract TaskManager is Importable, ExternalStorable, ITaskManager {
         return tid;
     }
 
+    function issueTask(uint256 action, string calldata cid, address[] calldata nodeAddresses) external returns (uint256) {
+        return 0;
+    }
+
     function acceptTask(address nodeAddress, uint256 tid) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
         _checkTaskExist(tid);

@@ -9,13 +9,11 @@ interface INodeManager {
     function online(address nodeAddress) external;
     function maintain(address nodeAddress) external;
 
-    function addFile(address userAddress, string calldata cid) external;
+    function addFile(string calldata cid) external;
+    function nodeCanAddFile(address nodeAddress, string calldata cid, uint256 size) external;
+    function nodeAddFile(address nodeAddress, string calldata cid) external;
 
-    function finishTask(address nodeAddress, uint256 tid, uint256 size) external;
-    function failTask(address nodeAddressAddress, uint256 tid) external;
-
-    function reportAcceptTaskTimeout(uint256 tid) external;
-    function reportTaskTimeout(uint256 tid) external;
-
-    function taskIssuedCallback(address nodeAddress, uint256 tid) external;
+    function deleteFile(string calldata cid) external;
+    function nodeCanDeleteFile(address nodeAddress, string calldata cid) external;
+    function nodeDeleteFile(address nodeAddress, string calldata cid) external;
 }

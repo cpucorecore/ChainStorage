@@ -1,7 +1,7 @@
 pragma solidity ^0.5.2;
 
 interface ITaskManager {
-    function issueTask(uint256 action, address userAddress, string calldata cid, address nodeAddress, bool noCallback) external returns (uint256);
+    function issueTask(uint256 action, string calldata cid, address[] calldata nodeAddresses) external;
     function acceptTask(address nodeAddress, uint256 tid) external;
     function finishTask(address nodeAddress, uint256 tid) external;
     function failTask(address nodeAddress, uint256 tid) external;

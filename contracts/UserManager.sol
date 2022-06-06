@@ -9,9 +9,9 @@ import "./interfaces/IFileManager.sol";
 
 contract UserManager is Importable, ExternalStorable, IUserManager {
     event UserAction(address indexed userAddress, uint256 action, string cid);
-    event FileAdded(address indexed userAddress, string cid);
-    event FileAddFailed(address indexed userAddress, string cid);
-    event FileDeleted(address indexed userAddress, string cid);
+    event AddFileFinished(address indexed userAddress, string cid);
+    event AddFileFailed(address indexed userAddress, string cid);
+    event DeleteFileFinished(address indexed userAddress, string cid);
 
     constructor(IResolver _resolver) public Importable(_resolver) {
         setContractName(CONTRACT_USER_MANAGER);
@@ -72,7 +72,7 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
             uint256 size = _FileManager().getSize(cid);
             require(size > 0, "U:file size zero, file in processing, please wait a moment and try again");
             _Storage().useStorage(userAddress, size, true);
-            emit FileAdded(userAddress, cid);
+            emit AddFileFinished(userAddress, cid);
         }
 
         _Storage().addFile(userAddress, cid, duration, ext);
@@ -84,7 +84,7 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
         mustAddress(CONTRACT_FILE_MANAGER);
         if(_Storage().fileExist(userAddress, cid)) {
             _Storage().useStorage(userAddress, size, false);
-            emit FileAdded(userAddress, cid);
+            emit AddFileFinished(userAddress, cid);
         }
     }
 
@@ -92,7 +92,7 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
         mustAddress(CONTRACT_FILE_MANAGER);
         _Storage().upInvalidAddFileCount(userAddress);
 
-        emit FileAddFailed(userAddress, cid);
+        emit AddFileFailed(userAddress, cid);
     }
 
     function deleteFile(address userAddress, string calldata cid) external {
@@ -106,7 +106,7 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
         bool finish = _FileManager().deleteFile(cid, userAddress);
         if(finish) {
             _Storage().freeStorage(userAddress, size);
-            emit FileDeleted(userAddress, cid);
+            emit DeleteFileFinished(userAddress, cid);
         }
     }
 
@@ -115,7 +115,7 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
         _Storage().deleteFile(userAddress, cid);
         _Storage().freeStorage(userAddress, size);
 
-        emit FileDeleted(userAddress, cid);
+        emit DeleteFileFinished(userAddress, cid);
     }
 
     function setFileExt(address userAddress, string calldata cid, string calldata ext) external {

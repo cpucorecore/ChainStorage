@@ -9,74 +9,68 @@ contract FileStorage is ExternalStorage, IFileStorage {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     struct File {
-        bool exist;
+        uint256 status;
+        uint256 size;
         EnumerableSet.AddressSet users;
         EnumerableSet.AddressSet nodes;
     }
 
-    mapping(string=> File) private cid2fileItem;
-    mapping(bytes32=>string) private cidHash2cid;
-    mapping(string=>uint256) private cid2size;
+    mapping(string => File) private cid2file;
     uint256 private totalSize;
     uint256 private totalFileNumber;
 
     constructor(address _manager) public ExternalStorage(_manager) {}
-
-    function exist(string memory cid) public view returns (bool) {
-        return cid2fileItem[cid].exist;
-    }
 
     function newFile(string calldata cid) external {
         mustManager(managerName);
 
         EnumerableSet.AddressSet memory users;
         EnumerableSet.AddressSet memory nodes;
-        cid2fileItem[cid] = File(true, users, nodes);
-
-        bytes32 cidHash = keccak256(bytes(cid));
-        cidHash2cid[cidHash] = cid;
-        totalFileNumber = totalFileNumber.add(1);
+        cid2file[cid] = File(DefaultStatus, 0, users, nodes);
     }
 
     function deleteFile(string calldata cid) external {
         mustManager(managerName);
         totalFileNumber = totalFileNumber.sub(1);
-        delete cid2fileItem[cid];
-    }
-
-    function getCidByHash(bytes32 hash) external view returns (string memory) {
-        return cidHash2cid[hash];
+        delete cid2file[cid];
     }
 
     function getSize(string calldata cid) external view returns (uint256) {
-        return cid2size[cid];
+        return cid2file[cid].size;
     }
 
     function setSize(string calldata cid, uint256 size) external {
         mustManager(managerName);
-        cid2size[cid] = size;
+    }
+
+    function getStatus(string calldata cid) external view returns (uint256) {
+        return cid2file[cid].status;
+    }
+
+    function setStatus(string calldata cid, uint256 status) external {
+        cid2file[cid].status = status;
     }
 
     function userExist(string calldata cid, address userAddress) external view returns (bool) {
-        return cid2fileItem[cid].users.contains(userAddress);
+        return cid2file[cid].users.contains(userAddress);
     }
 
     function userEmpty(string calldata cid) external view returns (bool) {
-        return 0 == cid2fileItem[cid].users.length();
+        return 0 == cid2file[cid].users.length();
     }
 
     function addUser(string calldata cid, address userAddress) external {
         mustManager(managerName);
-        cid2fileItem[cid].users.add(userAddress);
+        cid2file[cid].users.add(userAddress);
     }
 
     function deleteUser(string calldata cid, address userAddress) external {
         mustManager(managerName);
-        cid2fileItem[cid].users.remove(userAddress);
+        cid2file[cid].users.remove(userAddress);
     }
 
     function getUsers(string calldata cid) external view returns (address[] memory) {
-        EnumerableSet.AddressSet storage users = cid2fileItem[cid].users;
+        EnumerableSet.AddressSet storage users = cid2file[cid].users;
         uint256 count = users.length();
         address[] memory result = new address[](count);
         for(uint256 i=0; i<count; i++) {
@@ -86,7 +80,7 @@ contract FileStorage is ExternalStorage, IFileStorage {
     }
 
     function getUsers(string calldata cid, uint256 pageSize, uint256 pageNumber) external view returns (address[] memory, bool) {
-        EnumerableSet.AddressSet storage users = cid2fileItem[cid].users;
+        EnumerableSet.AddressSet storage users = cid2file[cid].users;
         Paging.Page memory page = Paging.getPage(users.length(), pageSize, pageNumber);
         uint256 start = page.pageNumber.sub(1).mul(page.pageSize);
         address[] memory result = new address[](page.pageRecords);
@@ -97,25 +91,31 @@ contract FileStorage is ExternalStorage, IFileStorage {
     }
 
     function nodeExist(string calldata cid, address nodeAddress) external view returns (bool) {
-        return cid2fileItem[cid].nodes.contains(nodeAddress);
+        return cid2file[cid].nodes.contains(nodeAddress);
     }
 
     function nodeEmpty(string calldata cid) external view returns (bool) {
-        return 0 == cid2fileItem[cid].nodes.length();
+        return 0 == cid2file[cid].nodes.length();
     }
 
     function addNode(string calldata cid, address nodeAddress) external {
         mustManager(managerName);
-        cid2fileItem[cid].nodes.add(nodeAddress);
+        cid2file[cid].nodes.add(nodeAddress);
+    }
+
+    function addNodes(string calldata cid, address[] calldata nodeAddresses) external {
+        for(uint i=0; i<nodeAddresses.length; i++) {
+            cid2file[cid].nodes.add(nodeAddresses[i]);
+        }
     }
 
     function deleteNode(string calldata cid, address nodeAddress) external {
         mustManager(managerName);
-        cid2fileItem[cid].nodes.remove(nodeAddress);
+        cid2file[cid].nodes.remove(nodeAddress);
     }
 
     function getNodes(string calldata cid) external view returns (address[] memory) {
-        EnumerableSet.AddressSet storage nodes = cid2fileItem[cid].nodes;
+        EnumerableSet.AddressSet storage nodes = cid2file[cid].nodes;
         uint256 count = nodes.length();
         address[] memory result = new address[](count);
         for(uint256 i=0; i<count; i++) {
@@ -125,7 +125,7 @@ contract FileStorage is ExternalStorage, IFileStorage {
     }
 
     function getNodes(string calldata cid, uint256 pageSize, uint256 pageNumber) external view returns (address[] memory, bool) {
-        EnumerableSet.AddressSet storage nodes = cid2fileItem[cid].nodes;
+        EnumerableSet.AddressSet storage nodes = cid2file[cid].nodes;
         Paging.Page memory page = Paging.getPage(nodes.length(), pageSize, pageNumber);
         uint256 start = page.pageNumber.sub(1).mul(page.pageSize);
         address[] memory result = new address[](page.pageRecords);
