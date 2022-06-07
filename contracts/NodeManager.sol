@@ -6,24 +6,22 @@ import "./base/ExternalStorable.sol";
 import "./interfaces/INodeManager.sol";
 import "./interfaces/storages/INodeStorage.sol";
 import "./interfaces/ISetting.sol";
-import "./interfaces/ITaskManager.sol";
 import "./interfaces/IFileManager.sol";
 
 contract NodeManager is Importable, ExternalStorable, INodeManager {
     event NodeStatusChanged(address indexed nodeAddress, uint256 from, uint256 to);
 
     event TryRequestAddFile(string cid);
-    event RequestAddFile(string cid, uint256 tid);
+    event RequestAddFile(string cid, address[] nodeAddresses);
 
     event TryRequestDeleteFile(string cid, address[] nodeAddresses);
-    event RequestDeleteFile(string cid, uint256 tid);
+    event RequestDeleteFile(string cid, address[] nodeAddresses);
 
     constructor(IResolver _resolver) public Importable(_resolver) {
         setContractName(CONTRACT_NODE_MANAGER);
 
         imports = [
         CONTRACT_SETTING,
-        CONTRACT_TASK_MANAGER,
         CONTRACT_FILE_MANAGER,
         CONTRACT_MONITOR,
         CONTRACT_CHAIN_STORAGE
@@ -36,10 +34,6 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
 
     function _Setting() private view returns (ISetting) {
         return ISetting(requireAddress(CONTRACT_SETTING));
-    }
-
-    function _TaskManager() private view returns (ITaskManager) {
-        return ITaskManager(requireAddress(CONTRACT_TASK_MANAGER));
     }
 
     function _FileManager() private view returns (IFileManager) {
@@ -67,12 +61,13 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
     }
 
     function deRegister(address nodeAddress) external {
-        // TODO node should delete cids and report the cids before deRegister
         mustAddress(CONTRACT_CHAIN_STORAGE);
 
         _nodeMustExist(nodeAddress);
         uint256 status = _Storage().getStatus(nodeAddress);
         require(NodeRegistered == status || NodeMaintain == status, "N:wrong status must[RM]");
+        (bytes32[] memory cidHashes, bool finish) = _Storage().getCidHashes(nodeAddress, 1, 50);
+        require(0 == cidHashes.length, "N:cid not empty");
         _Storage().deleteNode(nodeAddress);
 
         emit NodeStatusChanged(nodeAddress, status, DefaultStatus);
@@ -84,9 +79,6 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
 
         uint256 status = _Storage().getStatus(nodeAddress);
         require(NodeRegistered == status || NodeMaintain == status || NodeOffline == status, "N:wrong status[RMO]");
-
-        uint256 nodeTasksLength = _Storage().getTasks(nodeAddress).length;
-        require(0 == nodeTasksLength, "N:can't online before finish all tasks");
 
         _Storage().setStatus(nodeAddress, NodeOnline);
         _Storage().addOnlineNode(nodeAddress);
@@ -114,21 +106,20 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
 
     function nodeCanAddFile(address nodeAddress, string calldata cid, uint256 size) external {
         uint256 count = _Storage().nodeCanAddFile(nodeAddress, cid, size);
-        if (count == _Setting().getReplica()) {
-            if (_Storage().isSizeConsistent(cid)) {
+        if (count == _FileManager().getReplica(cid)) {
+        (bool sizeConsistent, uint256 size) = _Storage().isSizeConsistent(cid);
+            if (sizeConsistent) {
                 _FileManager().onBeginAddFile(cid, size);
                 address[] memory nodeAddresses = _Storage().getCanAddCidNodeAddresses(cid);
-                uint256 tid = _TaskManager().issueTask(Add, cid, nodeAddresses);
-                emit RequestAddFile(cid, tid);
+                emit RequestAddFile(cid, nodeAddresses);
             }
         }
     }
 
     function nodeAddFile(address nodeAddress, string calldata cid) external {
-        uint256 allNodeFinishAddFile = _Storage().nodeAddFile(cid, nodeAddress);
+        bool allNodeFinishAddFile = _Storage().nodeAddFile(nodeAddress, cid);
         if (allNodeFinishAddFile) {
             _FileManager().onEndAddFile(cid, _Storage().getNodeAddresses(cid));
-            // TODO: tell task node finish add file
         }
     }
 
@@ -143,13 +134,12 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
         if (allNodeCanDeleteFile) {
             _FileManager().onBeginDeleteFile(cid);
             address[] memory nodeAddresses = _Storage().getNodeAddresses(cid);
-            uint256 tid = _TaskManager().issueTask(Delete, cid, nodeAddresses);
-            emit RequestDeleteFile(cid, tid);
+            emit RequestDeleteFile(cid, nodeAddresses);
         }
     }
 
     function nodeDeleteFile(address nodeAddress, string calldata cid) external {
-        uint256 allNodeFinishDeleteFile = _Storage().nodeDeleteFile(cid, nodeAddress);
+        bool allNodeFinishDeleteFile = _Storage().nodeDeleteFile(nodeAddress, cid);
         if (allNodeFinishDeleteFile) {
             _FileManager().onEndDeleteFile(cid, _Storage().getNodeAddresses(cid));
         }

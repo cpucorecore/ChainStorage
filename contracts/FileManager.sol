@@ -6,7 +6,6 @@ import "./interfaces/IFileManager.sol";
 import "./interfaces/storages/IFileStorage.sol";
 import "./interfaces/IUserManager.sol";
 import "./interfaces/INodeManager.sol";
-import "./interfaces/ITaskManager.sol";
 import "./interfaces/ISetting.sol";
 
 contract FileManager is Importable, ExternalStorable, IFileManager {
@@ -15,7 +14,6 @@ contract FileManager is Importable, ExternalStorable, IFileManager {
         imports = [
         CONTRACT_USER_MANAGER,
         CONTRACT_NODE_MANAGER,
-        CONTRACT_TASK_MANAGER,
         CONTRACT_SETTING
         ];
     }
@@ -32,10 +30,6 @@ contract FileManager is Importable, ExternalStorable, IFileManager {
         return INodeManager(requireAddress(CONTRACT_NODE_MANAGER));
     }
 
-    function _TaskManager() private view returns (ITaskManager) {
-        return ITaskManager(requireAddress(CONTRACT_TASK_MANAGER));
-    }
-
     function _Setting() private view returns (ISetting) {
         return ISetting(requireAddress(CONTRACT_SETTING));
     }
@@ -50,8 +44,9 @@ contract FileManager is Importable, ExternalStorable, IFileManager {
                 FileAdded == status ||
                 FilePartialAdded == status, "F:wrong status");
 
+        uint256 replica = _Setting().getReplica();
         if (DefaultStatus == status) {
-            _Storage().newFile(cid);
+            _Storage().newFile(cid, replica);
             _Storage().setStatus(cid, FileTryAdd);
             _NodeManager().addFile(cid);
             waitCallback = true;
@@ -141,5 +136,9 @@ contract FileManager is Importable, ExternalStorable, IFileManager {
 
     function getNodeNumber(string calldata cid) external view returns (uint256) {
         return _Storage().getNodes(cid).length;
+    }
+
+    function getReplica(string calldata cid) external view returns (uint256) {
+        return _Storage().getReplica(cid);
     }
 }

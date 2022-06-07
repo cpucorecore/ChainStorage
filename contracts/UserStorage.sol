@@ -61,7 +61,7 @@ contract UserStorage is ExternalStorage, IUserStorage {
 
     function freeStorage(address userAddress, uint256 size) external {
         mustManager(managerName);
-        users[userAddress].storageSpace.unUseSpace(size);
+        users[userAddress].storageSpace.freeSpace(size);
     }
 
     function exist(address userAddress) public view returns (bool) {

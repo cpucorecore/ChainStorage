@@ -9,9 +9,8 @@ interface IFileManager {
     function onBeginDeleteFile(string calldata cid) external;
     function onEndDeleteFile(string calldata cid, address[] calldata nodeAddresses) external;
 
-    function onNodeDeleteFileFinish(address nodeAddress, address userAddress, string calldata cid) external;
-
     function getSize(string calldata cid) external view returns (uint256);
     function getNodes(string calldata cid) external view returns (address[] memory);
     function getNodeNumber(string calldata cid) external view returns (uint256);
+    function getReplica(string calldata cid) external view returns (uint256);
 }

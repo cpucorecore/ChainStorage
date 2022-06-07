@@ -34,12 +34,8 @@ contract TaskManager is Importable, ExternalStorable, ITaskManager {
         uint256 tid = _Storage().newTask(userAddress, action, cid, nodeAddress, noCallback);
         emit TaskIssued(nodeAddress, tid);
         emit TaskStatusChanged(tid, nodeAddress, action, DefaultStatus, TaskCreated);
-        _NodeManager().taskIssuedCallback(nodeAddress, tid);
+//        _NodeManager().taskIssuedCallback(nodeAddress, tid);
         return tid;
-    }
-
-    function issueTask(uint256 action, string calldata cid, address[] calldata nodeAddresses) external returns (uint256) {
-        return 0;
     }
 
     function acceptTask(address nodeAddress, uint256 tid) external {

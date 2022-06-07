@@ -7,31 +7,50 @@ import "./lib/Paging.sol";
 
 contract FileStorage is ExternalStorage, IFileStorage {
     using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
 
     struct File {
         uint256 status;
         uint256 size;
+        uint256 replica;
         EnumerableSet.AddressSet users;
         EnumerableSet.AddressSet nodes;
     }
 
     mapping(string => File) private cid2file;
+    mapping(bytes32 => string) private cidHash2cid;
+    EnumerableSet.Bytes32Set private cidHashes;
     uint256 private totalSize;
-    uint256 private totalFileNumber;
 
     constructor(address _manager) public ExternalStorage(_manager) {}
 
-    function newFile(string calldata cid) external {
+    function exist(string calldata cid) external view returns (bool) {
+        return (DefaultStatus != cid2file[cid].status);
+    }
+
+    function newFile(string calldata cid, uint256 replica) external {
         mustManager(managerName);
 
         EnumerableSet.AddressSet memory users;
         EnumerableSet.AddressSet memory nodes;
-        cid2file[cid] = File(DefaultStatus, 0, users, nodes);
+        cid2file[cid] = File(DefaultStatus, 0, replica, users, nodes);
+
+        bytes32 cidHash = keccak256(bytes(cid));
+        cidHash2cid[cidHash] = cid;
+        if (!cidHashes.contains(cidHash)) {
+            cidHashes.add(cidHash);
+        }
     }
 
     function deleteFile(string calldata cid) external {
         mustManager(managerName);
-        totalFileNumber = totalFileNumber.sub(1);
+
+        bytes32 cidHash = keccak256(bytes(cid));
+        if (cidHashes.contains(cidHash)) {
+            cidHashes.remove(cidHash);
+        }
+        totalSize = totalSize.sub(cid2file[cid].size);
+        delete cidHash2cid[cidHash];
         delete cid2file[cid];
     }
 
@@ -41,6 +60,15 @@ contract FileStorage is ExternalStorage, IFileStorage {
 
     function setSize(string calldata cid, uint256 size) external {
         mustManager(managerName);
+
+        if (0 == cid2file[cid].size) {
+            cid2file[cid].size = size;
+            totalSize = totalSize.add(size);
+        }
+    }
+
+    function getReplica(string calldata cid) external view returns (uint256) {
+        return cid2file[cid].replica;
     }
 
     function getStatus(string calldata cid) external view returns (uint256) {
@@ -139,17 +167,11 @@ contract FileStorage is ExternalStorage, IFileStorage {
         return totalSize;
     }
 
-    function upTotalSize(uint256 size) external returns (uint256) {
-        totalSize = totalSize.add(size);
-        return totalSize;
+    function getFileNumber() external view returns (uint256) {
+        return cidHashes.length();
     }
 
-    function downTotalSize(uint256 size) external returns (uint256) {
-        totalSize = totalSize.sub(size);
-        return totalSize;
-    }
-
-    function getTotalFileNumber() external view returns (uint256) {
-        return totalFileNumber;
+    function getCid(bytes32 cidHash) external view returns (string memory) {
+        return cidHash2cid[cidHash];
     }
 }

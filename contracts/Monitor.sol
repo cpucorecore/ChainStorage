@@ -135,14 +135,14 @@ contract Monitor is Importable, ExternalStorable, IMonitor {
     function _reportTaskAcceptTimeout(address monitorAddress, uint256 tid) private {
         _Storage().addReport(monitorAddress, tid, ReportAcceptTimeout, now);
         _saveCurrentTid(monitorAddress, tid);
-        _NodeManager().reportAcceptTaskTimeout(tid);
+//        _NodeManager().reportAcceptTaskTimeout(tid);
         emit MonitorReport(monitorAddress, tid, ReportAcceptTimeout);
     }
 
     function _reportTaskTimeout(address monitorAddress, uint256 tid) private {
         _Storage().addReport(monitorAddress, tid, ReportTimeout, now);
         _saveCurrentTid(monitorAddress, tid);
-        _NodeManager().reportTaskTimeout(tid);
+//        _NodeManager().reportTaskTimeout(tid);
         emit MonitorReport(monitorAddress, tid, ReportTimeout);
     }
 

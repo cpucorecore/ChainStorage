@@ -9,8 +9,8 @@ import "./lib/StorageSpaceManager.sol";
 
 contract NodeStorage is ExternalStorage, INodeStorage {
     using StorageSpaceManager for StorageSpaceManager.StorageSpace;
-    using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
 
     struct Node {
         uint256 status;
@@ -53,7 +53,7 @@ contract NodeStorage is ExternalStorage, INodeStorage {
     }
 
     function freeStorage(address nodeAddress, uint256 size) external {
-        nodes[nodeAddress].storageSpace.unUseSpace(size);
+        nodes[nodeAddress].storageSpace.freeSpace(size);
     }
 
     function addOnlineNode(address nodeAddress) external {
@@ -139,8 +139,9 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         bool isDeleteFileFinished;
     }
 
-    mapping(address => mapping(bytes32 => CidState)) private node2cidState;
+    mapping(address => mapping(string => CidState)) private node2cidState;
     mapping(string => EnumerableSet.AddressSet) private cid2nodeAddresses;
+    mapping(address => EnumerableSet.Bytes32Set) private node2cidHashes;
 
     // for addFile
     mapping(string => EnumerableSet.AddressSet) private cid2canAddFileNodeAddresses;
@@ -152,10 +153,9 @@ contract NodeStorage is ExternalStorage, INodeStorage {
     function nodeCanAddFile(address nodeAddress, string calldata cid, uint256 size) external returns (uint256) {
         mustManager(managerName);
 
-        bytes32 cidHash = keccak256(bytes(cid));
         if (!cid2canAddFileNodeAddresses[cid].contains(nodeAddress)) {
             cid2canAddFileNodeAddresses[cid].add(nodeAddress);
-            node2cidState[nodeAddress][cidHash] = CidState(size, false, false);
+            node2cidState[nodeAddress][cid] = CidState(size, false, false);
         }
         return cid2canAddFileNodeAddresses[cid].length();
     }
@@ -182,9 +182,14 @@ contract NodeStorage is ExternalStorage, INodeStorage {
             cid2nodeAddresses[cid].add(nodeAddress);
         }
 
+        bytes32 cidHash = keccak256(bytes(cid));
+        if (!node2cidHashes[nodeAddress].contains(cidHash)) {
+            node2cidHashes[nodeAddress].add(cidHash);
+        }
+
         bool allNodeFinishAddFile = true;
         for(uint i=0; i<cid2canAddFileNodeAddresses[cid].length(); i++) {
-            if (false == node2cidState[cid2canAddFileNodeAddresses[cid].at[i]][cid].isAddFileFinished) {
+            if (false == node2cidState[cid2canAddFileNodeAddresses[cid].at(i)][cid].isAddFileFinished) {
                 allNodeFinishAddFile = false;
             }
         }
@@ -221,13 +226,32 @@ contract NodeStorage is ExternalStorage, INodeStorage {
             cid2nodeAddresses[cid].remove(nodeAddress);
         }
 
+        bytes32 cidHash = keccak256(bytes(cid));
+        if (node2cidHashes[nodeAddress].contains(cidHash)) {
+            node2cidHashes[nodeAddress].remove(cidHash);
+        }
+
         bool allNodeFinishDeleteFile = true;
         for(uint i=0; i<cid2canDeleteFileNodeAddresses[cid].length(); i++) {
-            if (false == node2cidState[cid2canDeleteFileNodeAddresses[cid].at[i]][cid].isDeleteFileFinished) {
+            if (false == node2cidState[cid2canDeleteFileNodeAddresses[cid].at(i)][cid].isDeleteFileFinished) {
                 allNodeFinishDeleteFile = false;
             }
         }
 
         return allNodeFinishDeleteFile;
+    }
+
+    function getCidHashes(address nodeAddress) external view returns (bytes32[] memory) {
+        return node2cidHashes[nodeAddress].values();
+    }
+
+    function getCidHashes(address nodeAddress, uint256 pageSize, uint256 pageNumber) external view returns (bytes32[] memory, bool) {
+        Paging.Page memory page = Paging.getPage(node2cidHashes[nodeAddress].length(), pageSize, pageNumber);
+        uint256 start = page.pageNumber.sub(1).mul(page.pageSize);
+        bytes32[] memory result = new bytes32[](page.pageRecords);
+        for(uint256 i=0; i<page.pageRecords; i++) {
+            result[i] = node2cidHashes[nodeAddress].at(start+i);
+        }
+        return (result, page.pageNumber == page.totalPages);
     }
 }

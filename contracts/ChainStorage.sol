@@ -6,7 +6,6 @@ import "./base/Importable.sol";
 import "./interfaces/IUserManager.sol";
 import "./interfaces/INodeManager.sol";
 import "./interfaces/IMonitor.sol";
-import "./interfaces/ITaskManager.sol";
 import "./interfaces/ISetting.sol";
 
 contract ChainStorage is Proxyable, Pausable, Importable {
@@ -23,7 +22,6 @@ contract ChainStorage is Proxyable, Pausable, Importable {
         CONTRACT_SETTING,
         CONTRACT_USER_MANAGER,
         CONTRACT_NODE_MANAGER,
-        CONTRACT_TASK_MANAGER,
         CONTRACT_MONITOR,
         ACCOUNT_ADMIN
         ];
@@ -43,10 +41,6 @@ contract ChainStorage is Proxyable, Pausable, Importable {
 
     function _Monitor() private view returns (IMonitor) {
         return IMonitor(requireAddress(CONTRACT_MONITOR));
-    }
-
-    function _TaskManager() private view returns (ITaskManager) {
-        return ITaskManager(requireAddress(CONTRACT_TASK_MANAGER));
     }
 
     function userRegister(string calldata ext) external {
@@ -129,29 +123,24 @@ contract ChainStorage is Proxyable, Pausable, Importable {
         _NodeManager().maintain(msg.sender);
     }
 
-    function nodeAcceptTask(uint256 tid) external {
+    function nodeCanAddFile(string calldata cid, uint256 size) external {
         _mustOnline();
-        _TaskManager().acceptTask(msg.sender, tid);
+        _NodeManager().nodeCanAddFile(msg.sender, cid, size);
     }
 
-    function nodeReportAddFileProgressBySize(uint256 tid, uint256 size) external {
+    function nodeAddFile(string calldata cid) external {
         _mustOnline();
-        _TaskManager().reportAddFileProgressBySize(msg.sender, tid, size);
+        _NodeManager().nodeAddFile(msg.sender, cid);
     }
 
-    function nodeReportAddFileProgressByPercentage(uint256 tid, uint256 percentage) external {
+    function nodeCanDeleteFile(string calldata cid) external {
         _mustOnline();
-        _TaskManager().reportAddFileProgressByPercentage(msg.sender, tid, percentage);
+        _NodeManager().nodeCanDeleteFile(msg.sender, cid);
     }
 
-    function nodeFinishTask(uint256 tid, uint256 size) external {
+    function nodeDeleteFile(string calldata cid) external {
         _mustOnline();
-        _NodeManager().finishTask(msg.sender, tid, size);
-    }
-
-    function nodeFailTask(uint256 tid) external {
-        _mustOnline();
-        _NodeManager().failTask(msg.sender, tid);
+        _NodeManager().nodeDeleteFile(msg.sender, cid);
     }
 
     function monitorRegister(string calldata ext) external {

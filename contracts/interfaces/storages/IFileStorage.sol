@@ -1,12 +1,15 @@
 pragma solidity ^0.5.2;
 
 contract IFileStorage {
-    function newFile(string calldata cid) external;
+    function exist(string calldata cid) external view returns (bool);
+    function newFile(string calldata cid, uint256 replica) external;
     function getStatus(string calldata cid) external view returns (uint256);
     function setStatus(string calldata cid, uint256 status) external;
 
     function getSize(string calldata cid) external view returns (uint256);
     function setSize(string calldata cid, uint256 size) external;
+
+    function getReplica(string calldata cid) external view returns (uint256);
 
     function deleteFile(string calldata cid) external;
 
@@ -26,7 +29,7 @@ contract IFileStorage {
     function getNodes(string calldata cid, uint256 pageSize, uint256 pageNumber) external view returns (address[] memory, bool);
 
     function getTotalSize() external view returns (uint256);
-    function upTotalSize(uint256 size) external returns (uint256);
-    function downTotalSize(uint256 size) external returns (uint256);
-    function getTotalFileNumber() external view returns (uint256);
+    function getFileNumber() external view returns (uint256);
+
+    function getCid(bytes32 cidHash) external view returns (string memory);
 }
