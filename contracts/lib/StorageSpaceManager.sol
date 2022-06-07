@@ -19,7 +19,7 @@ library StorageSpaceManager {
     }
 
     function freeSpace(StorageSpace storage self, uint256 size) internal {
-        require(size <= self.used, "SSM:unUseSpace out of used");
+        require(size <= self.used, "SSM:freeSpace out of used");
         self.used -= size;
     }
 

@@ -22,9 +22,8 @@ contract IFileStorage {
 
     function nodeExist(string calldata cid, address nodeAddress) external view returns (bool);
     function nodeEmpty(string calldata cid) external view returns (bool);
-    function addNode(string calldata cid, address nodeAddress) external;
     function addNodes(string calldata cid, address[] calldata nodeAddresses) external;
-    function deleteNode(string calldata cid, address nodeAddress) external;
+    function deleteNodes(string calldata cid, address[] calldata nodeAddresses) external;
     function getNodes(string calldata cid) external view returns (address[] memory);
     function getNodes(string calldata cid, uint256 pageSize, uint256 pageNumber) external view returns (address[] memory, bool);
 
@@ -32,4 +31,7 @@ contract IFileStorage {
     function getFileNumber() external view returns (uint256);
 
     function getCid(bytes32 cidHash) external view returns (string memory);
+
+    function setLastUser(string calldata cid, address lastUser) external;
+    function getLastUser(string calldata cid) external view returns (address);
 }

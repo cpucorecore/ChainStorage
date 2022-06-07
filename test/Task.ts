@@ -23,7 +23,7 @@ import {
 } from "./context";
 import { Signer } from "ethers";
 
-describe("Task", function () {
+describe.skip("Task", function () {
   let user: Signer;
 
   before(async () => {

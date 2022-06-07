@@ -21,6 +21,7 @@ contract FileStorage is ExternalStorage, IFileStorage {
     mapping(bytes32 => string) private cidHash2cid;
     EnumerableSet.Bytes32Set private cidHashes;
     uint256 private totalSize;
+    mapping(string => address) private cid2lastUser;
 
     constructor(address _manager) public ExternalStorage(_manager) {}
 
@@ -126,20 +127,20 @@ contract FileStorage is ExternalStorage, IFileStorage {
         return 0 == cid2file[cid].nodes.length();
     }
 
-    function addNode(string calldata cid, address nodeAddress) external {
-        mustManager(managerName);
-        cid2file[cid].nodes.add(nodeAddress);
-    }
-
     function addNodes(string calldata cid, address[] calldata nodeAddresses) external {
+        mustManager(managerName);
+
         for(uint i=0; i<nodeAddresses.length; i++) {
             cid2file[cid].nodes.add(nodeAddresses[i]);
         }
     }
 
-    function deleteNode(string calldata cid, address nodeAddress) external {
+    function deleteNodes(string calldata cid, address[] calldata nodeAddresses) external {
         mustManager(managerName);
-        cid2file[cid].nodes.remove(nodeAddress);
+
+        for(uint i=0; i<nodeAddresses.length; i++) {
+            cid2file[cid].nodes.remove(nodeAddresses[i]);
+        }
     }
 
     function getNodes(string calldata cid) external view returns (address[] memory) {
@@ -173,5 +174,13 @@ contract FileStorage is ExternalStorage, IFileStorage {
 
     function getCid(bytes32 cidHash) external view returns (string memory) {
         return cidHash2cid[cidHash];
+    }
+
+    function setLastUser(string calldata cid, address lastUser) external {
+        cid2lastUser[cid] = lastUser;
+    }
+
+    function getLastUser(string calldata cid) external view returns (address) {
+        return cid2lastUser[cid];
     }
 }

@@ -112,8 +112,8 @@ describe("Node", function () {
   it("should fail setStorageTotal for newStorageTotal little than used", async function () {
     await registerMoreNodesAndOnline(1);
     await chainStorage.connect(users[0]).userAddFile(Cid, Duration, FileExt);
-    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
-    await chainStorage.connect(nodes[0]).nodeFinishTask(1, FileSize);
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cid, FileSize);
+    await chainStorage.connect(nodes[0]).nodeAddFile(Cid);
     await expect(
       chainStorage.connect(nodes[0]).nodeSetStorageTotal(FileSize - 1)
     ).to.revertedWith("N:too small");
@@ -133,8 +133,8 @@ describe("Node", function () {
   it("storageUsed should right after finish addFile task", async function () {
     await registerMoreNodesAndOnline(1);
     await chainStorage.connect(users[0]).userAddFile(Cid, Duration, FileExt);
-    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
-    await chainStorage.connect(nodes[0]).nodeFinishTask(1, FileSize);
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cid, FileSize);
+    await chainStorage.connect(nodes[0]).nodeAddFile(Cid);
     expect(await nodeStorage.getStorageUsed(nodeAddresses[0])).to.equal(
       FileSize
     );
@@ -144,11 +144,15 @@ describe("Node", function () {
   it("storageUsed should be 0 after finish deleteFile task", async function () {
     await registerMoreNodesAndOnline(1);
     await chainStorage.connect(users[0]).userAddFile(Cid, Duration, FileExt);
-    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
-    await chainStorage.connect(nodes[0]).nodeFinishTask(1, FileSize);
+
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cid, FileSize);
+    await chainStorage.connect(nodes[0]).nodeAddFile(Cid);
+
     await chainStorage.connect(users[0]).userDeleteFile(Cid);
-    await chainStorage.connect(nodes[0]).nodeAcceptTask(2);
-    await chainStorage.connect(nodes[0]).nodeFinishTask(2, FileSize);
+
+    await chainStorage.connect(nodes[0]).nodeCanDeleteFile(Cid);
+    await chainStorage.connect(nodes[0]).nodeDeleteFile(Cid);
+
     expect(await nodeStorage.getStorageUsed(nodeAddresses[0])).to.equal(0);
     await revertNodes();
   });
@@ -180,47 +184,6 @@ describe("Node", function () {
     await expect(
       chainStorage.connect(accounts[0]).nodeMaintain()
     ).to.be.revertedWith("N:wrong status must[O]");
-  });
-
-  it("should have no task", async function () {
-    await registerMoreNodesAndOnline(1);
-    expect(await nodeStorage.getTasks(nodeAddresses[0])).lengthOf(0);
-    await revertNodes();
-  });
-
-  it("should have task after finish task", async function () {
-    await registerMoreNodesAndOnline(1);
-    await chainStorage.connect(users[0]).userAddFile(Cid, Duration, FileExt);
-    expect(await nodeStorage.getTasks(nodeAddresses[0])).lengthOf(1);
-    // expect(await nodeStorage.getTids(nodeAddress)).to.contains(
-    //   BigNumber.from(1)
-    // ); // TODO fix
-    console.log(await nodeStorage.getTasks(nodeAddresses[0]));
-
-    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
-    await chainStorage.connect(nodes[0]).nodeFinishTask(1, FileSize);
-    expect(await nodeStorage.getTasks(nodeAddresses[0])).lengthOf(0);
-
-    await chainStorage.connect(users[0]).userDeleteFile(Cid);
-    expect(await nodeStorage.getTasks(nodeAddresses[0])).lengthOf(1);
-    // await expect(await nodeStorage.getTids(nodeAddress)).to.contains(
-    //   BigNumber.from(2)
-    // ); // TODO fix
-    console.log(await nodeStorage.getTasks(nodeAddresses[0]));
-    await chainStorage.connect(nodes[0]).nodeAcceptTask(2);
-    await chainStorage.connect(nodes[0]).nodeFinishTask(2, FileSize);
-    expect(await nodeStorage.getTasks(nodeAddresses[0])).lengthOf(0);
-    await revertNodes();
-  });
-
-  it("should have no task after fail task", async function () {
-    await registerMoreNodesAndOnline(1);
-    await chainStorage.connect(users[0]).userAddFile(Cid, Duration, FileExt);
-    await registerMoreNodesAndOnline(1);
-    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
-    await chainStorage.connect(nodes[0]).nodeFailTask(1);
-    expect(await nodeStorage.getTasks(nodeAddresses[0])).lengthOf(0);
-    await revertNodes();
   });
 
   it("all [online] node test", async function () {
@@ -337,36 +300,32 @@ describe("Node", function () {
     assert.lengthOf(allOnlineNodeAddresses, 0);
   });
 
-  it("AddFileFailedCount should be 0", async function () {
-    expect(await nodeStorage.getAddFileFailedCount(Cid)).to.equal(0);
-  });
+  // it("node can online after task acceptTimeout", async function () {
+  //   await registerMoreNodesAndOnline(1);
+  //   await chainStorage
+  //     .connect(users[0])
+  //     .userAddFile(Cids[0], Duration, FileExt);
+  //   await increaseTime(AddFileTaskTimeout);
+  //   await registerMoreNodesAndOnline(1);
+  //   await chainStorage.connect(monitors[0]).monitorReportTaskAcceptTimeout(1);
+  //
+  //   expect(await nodeStorage.getStatus(nodeAddresses[0])).to.equal(4);
+  //   await chainStorage.connect(nodes[0]).nodeOnline();
+  //   await revertNodes();
+  // });
 
-  it("node can online after task acceptTimeout", async function () {
-    await registerMoreNodesAndOnline(1);
-    await chainStorage
-      .connect(users[0])
-      .userAddFile(Cids[0], Duration, FileExt);
-    await increaseTime(AddFileTaskTimeout);
-    await registerMoreNodesAndOnline(1);
-    await chainStorage.connect(monitors[0]).monitorReportTaskAcceptTimeout(1);
-
-    expect(await nodeStorage.getStatus(nodeAddresses[0])).to.equal(4);
-    await chainStorage.connect(nodes[0]).nodeOnline();
-    await revertNodes();
-  });
-
-  it("node can online after task timeout", async function () {
-    await registerMoreNodesAndOnline(1);
-    await chainStorage
-      .connect(users[0])
-      .userAddFile(Cids[0], Duration, FileExt);
-    await chainStorage.connect(nodes[0]).nodeAcceptTask(1);
-    await increaseTime(AddFileTaskTimeout);
-    await registerMoreNodesAndOnline(1);
-    await chainStorage.connect(monitors[0]).monitorReportTaskTimeout(1);
-
-    expect(await nodeStorage.getStatus(nodeAddresses[0])).to.equal(4);
-    await chainStorage.connect(nodes[0]).nodeOnline();
-    await revertNodes();
-  });
+  // it("node can online after task timeout", async function () {
+  //   await registerMoreNodesAndOnline(1);
+  //   await chainStorage
+  //     .connect(users[0])
+  //     .userAddFile(Cids[0], Duration, FileExt);
+  //   await chainStorage.connect(nodes[0]).nodeCanAddFile(Cids[0], FileSize);
+  //   await increaseTime(AddFileTaskTimeout);
+  //   await registerMoreNodesAndOnline(1);
+  //   await chainStorage.connect(monitors[0]).monitorReportTaskTimeout(1);
+  //
+  //   expect(await nodeStorage.getStatus(nodeAddresses[0])).to.equal(4);
+  //   await chainStorage.connect(nodes[0]).nodeOnline();
+  //   await revertNodes();
+  // });
 });

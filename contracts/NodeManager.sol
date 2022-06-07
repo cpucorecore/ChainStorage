@@ -75,6 +75,7 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
 
     function online(address nodeAddress) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
+
         _nodeMustExist(nodeAddress);
 
         uint256 status = _Storage().getStatus(nodeAddress);
@@ -105,18 +106,25 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
     }
 
     function nodeCanAddFile(address nodeAddress, string calldata cid, uint256 size) external {
+        mustAddress(CONTRACT_CHAIN_STORAGE);
+
         uint256 count = _Storage().nodeCanAddFile(nodeAddress, cid, size);
         if (count == _FileManager().getReplica(cid)) {
         (bool sizeConsistent, uint256 size) = _Storage().isSizeConsistent(cid);
             if (sizeConsistent) {
                 _FileManager().onBeginAddFile(cid, size);
-                address[] memory nodeAddresses = _Storage().getCanAddCidNodeAddresses(cid);
+                address[] memory nodeAddresses = _Storage().getCanAddFileNodeAddresses(cid);
                 emit RequestAddFile(cid, nodeAddresses);
             }
         }
     }
 
     function nodeAddFile(address nodeAddress, string calldata cid) external {
+        mustAddress(CONTRACT_CHAIN_STORAGE);
+
+        require(_Storage().isCanAddFile(nodeAddress, cid), "N:can't add file");
+
+        _Storage().useStorage(nodeAddress, _FileManager().getSize(cid));
         bool allNodeFinishAddFile = _Storage().nodeAddFile(nodeAddress, cid);
         if (allNodeFinishAddFile) {
             _FileManager().onEndAddFile(cid, _Storage().getNodeAddresses(cid));
@@ -125,11 +133,14 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
 
     function deleteFile(string calldata cid) external {
         mustAddress(CONTRACT_FILE_MANAGER);
+
         address[] memory nodeAddresses = _Storage().getNodeAddresses(cid);
         emit TryRequestDeleteFile(cid, nodeAddresses);
     }
 
     function nodeCanDeleteFile(address nodeAddress, string calldata cid) external {
+        mustAddress(CONTRACT_CHAIN_STORAGE);
+
         bool allNodeCanDeleteFile = _Storage().nodeCanDeleteFile(nodeAddress, cid);
         if (allNodeCanDeleteFile) {
             _FileManager().onBeginDeleteFile(cid);
@@ -139,9 +150,12 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
     }
 
     function nodeDeleteFile(address nodeAddress, string calldata cid) external {
+        mustAddress(CONTRACT_CHAIN_STORAGE);
+
+        _Storage().freeStorage(nodeAddress, _FileManager().getSize(cid));
         bool allNodeFinishDeleteFile = _Storage().nodeDeleteFile(nodeAddress, cid);
         if (allNodeFinishDeleteFile) {
-            _FileManager().onEndDeleteFile(cid, _Storage().getNodeAddresses(cid));
+            _FileManager().onEndDeleteFile(cid, _Storage().getCanDeleteFileNodeAddresses(cid));
         }
     }
 

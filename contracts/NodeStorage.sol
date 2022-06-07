@@ -149,7 +149,6 @@ contract NodeStorage is ExternalStorage, INodeStorage {
     // for deleteFile
     mapping(string => EnumerableSet.AddressSet) private cid2canDeleteFileNodeAddresses;
 
-
     function nodeCanAddFile(address nodeAddress, string calldata cid, uint256 size) external returns (uint256) {
         mustManager(managerName);
 
@@ -172,8 +171,12 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         return (true, size);
     }
 
-    function getCanAddCidNodeAddresses(string calldata cid) external view returns (address[] memory) {
+    function getCanAddFileNodeAddresses(string calldata cid) external view returns (address[] memory) {
         return cid2canAddFileNodeAddresses[cid].values();
+    }
+
+    function isCanAddFile(address nodeAddress, string calldata cid) external view returns (bool) {
+        return cid2canAddFileNodeAddresses[cid].contains(nodeAddress);
     }
 
     function nodeAddFile(address nodeAddress, string calldata cid) external returns (bool) {
@@ -218,6 +221,10 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         }
 
         return allNodeCanDeleteFile;
+    }
+
+    function getCanDeleteFileNodeAddresses(string calldata cid) external view returns (address[] memory) {
+        return cid2canDeleteFileNodeAddresses[cid].values();
     }
 
     function nodeDeleteFile(address nodeAddress, string calldata cid) external returns (bool) {

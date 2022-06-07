@@ -9,6 +9,7 @@ import "./interfaces/IFileManager.sol";
 
 contract UserManager is Importable, ExternalStorable, IUserManager {
     event UserAction(address indexed userAddress, uint256 action, string cid);
+
     event AddFileFinished(address indexed userAddress, string cid);
     event AddFileFailed(address indexed userAddress, string cid);
     event DeleteFileFinished(address indexed userAddress, string cid);
@@ -64,13 +65,12 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
         mustAddress(CONTRACT_CHAIN_STORAGE);
 
         require(_Storage().exist(userAddress), "U:user not exist");
-        require(!_Storage().fileExist(userAddress, cid), "U:file exist"); // TODO: user have this file, but File may add file failed
-        require(_Storage().availableSpace(userAddress) > 0, "U:storage space not enough");
+        require(!_Storage().fileExist(userAddress, cid), "U:file exist");
+        require(_Storage().availableSpace(userAddress) > 0, "U:no available storage space");
 
         bool waitCallback = _FileManager().addFile(cid, userAddress);
         if (!waitCallback) {
             uint256 size = _FileManager().getSize(cid);
-            require(size > 0, "U:file size zero, file in processing, please wait a moment and try again");
             _Storage().useStorage(userAddress, size, true);
             emit AddFileFinished(userAddress, cid);
         }
@@ -82,29 +82,28 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
 
     function onAddFileFinish(address userAddress, string calldata cid, uint256 size) external {
         mustAddress(CONTRACT_FILE_MANAGER);
-        if(_Storage().fileExist(userAddress, cid)) {
-            _Storage().useStorage(userAddress, size, false);
-            emit AddFileFinished(userAddress, cid);
-        }
+
+        _Storage().useStorage(userAddress, size, false);
+        emit AddFileFinished(userAddress, cid);
     }
 
     function onAddFileFail(address userAddress, string calldata cid) external {
         mustAddress(CONTRACT_FILE_MANAGER);
-        _Storage().upInvalidAddFileCount(userAddress);
 
+        _Storage().upInvalidAddFileCount(userAddress);
         emit AddFileFailed(userAddress, cid);
     }
 
     function deleteFile(address userAddress, string calldata cid) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
+
         require(_Storage().exist(userAddress), "U:user not exist");
         require(_Storage().fileExist(userAddress, cid), "U:file not exist");
 
-        emit UserAction(userAddress, Delete, cid);
-
         uint256 size = _FileManager().getSize(cid);
-        bool finish = _FileManager().deleteFile(cid, userAddress);
-        if(finish) {
+        bool waitCallback = _FileManager().deleteFile(cid, userAddress);
+        emit UserAction(userAddress, Delete, cid);
+        if (!waitCallback) {
             _Storage().freeStorage(userAddress, size);
             emit DeleteFileFinished(userAddress, cid);
         }
@@ -112,6 +111,7 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
 
     function onDeleteFileFinish(address userAddress, string calldata cid, uint256 size) external {
         mustAddress(CONTRACT_FILE_MANAGER);
+
         _Storage().deleteFile(userAddress, cid);
         _Storage().freeStorage(userAddress, size);
 

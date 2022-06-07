@@ -69,16 +69,19 @@ contract FileManager is Importable, ExternalStorable, IFileManager {
     function onEndAddFile(string calldata cid, address[] calldata nodeAddresses) external {
         mustAddress(CONTRACT_NODE_MANAGER);
 
-        if (0 == nodeAddresses.length) {
+        if (0 == nodeAddresses.length) { // should not be happen, TODO delete
             _Storage().setStatus(cid, FileAddFailed);
-        } else if (_Setting().getReplica() == nodeAddresses.length) { // TODO: _Setting().getReplica() may changed
+        } else if (_Storage().getReplica(cid) == nodeAddresses.length) {
             _Storage().setStatus(cid, FileAdded);
-        } else {
+        } else { // should not be happen, TODO delete
             _Storage().setStatus(cid, FilePartialAdded);
         }
 
         if (0 != nodeAddresses.length) {
             _Storage().addNodes(cid, nodeAddresses);
+            _UserManager().onAddFileFinish(_Storage().getUsers(cid)[0], cid, _Storage().getSize(cid));
+        } else {
+            _UserManager().onAddFileFail(_Storage().getUsers(cid)[0], cid);
         }
     }
 
@@ -98,6 +101,7 @@ contract FileManager is Importable, ExternalStorable, IFileManager {
                 _Storage().deleteFile(cid);
             } else {
                 _Storage().setStatus(cid, FileTryDelete);
+                _Storage().setLastUser(cid, userAddress);
                 _NodeManager().deleteFile(cid);
                 waitCallback = true;
             }
@@ -117,11 +121,15 @@ contract FileManager is Importable, ExternalStorable, IFileManager {
     function onEndDeleteFile(string calldata cid, address[] calldata nodeAddresses) external {
         mustAddress(CONTRACT_NODE_MANAGER);
 
-        if (0 == nodeAddresses.length) {
+        if (0 == nodeAddresses.length) { // should not be happen, TODO delete
             _Storage().setStatus(cid, FileDeleteFailed);
         } else if (_Storage().getNodes(cid).length == nodeAddresses.length) {
+            uint256 size = _Storage().getSize(cid);
+            _Storage().deleteNodes(cid, nodeAddresses); // must do before next line
             _Storage().deleteFile(cid);
-        } else {
+            _UserManager().onDeleteFileFinish(_Storage().getLastUser(cid), cid, size);
+        } else { // should not be happen, TODO delete
+            _Storage().deleteNodes(cid, nodeAddresses);
             _Storage().setStatus(cid, FilePartialAdded);
         }
     }

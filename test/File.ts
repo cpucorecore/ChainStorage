@@ -14,7 +14,7 @@ import {
   userAddresses,
   taskStorage,
   nodeAddresses,
-  Cids, dumpFile
+  Cids,
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
 
@@ -71,7 +71,9 @@ describe("File", function () {
     await chainStorage.connect(nodes[0]).nodeCanAddFile(Cid, FileSize);
     await chainStorage.connect(nodes[1]).nodeCanAddFile(Cid, FileSize);
     await chainStorage.connect(nodes[0]).nodeAddFile(Cid);
+    await chainStorage.connect(nodes[1]).nodeAddFile(Cid);
     expect(await fileStorage.nodeExist(Cid, nodeAddresses[0])).to.equal(true);
+    expect(await fileStorage.nodeExist(Cid, nodeAddresses[1])).to.equal(true);
   });
 
   it("should nodeExist before node finish deleteFile task", async function () {
@@ -79,19 +81,28 @@ describe("File", function () {
     await chainStorage.connect(nodes[0]).nodeCanAddFile(Cid, FileSize);
     await chainStorage.connect(nodes[1]).nodeCanAddFile(Cid, FileSize);
     await chainStorage.connect(nodes[0]).nodeAddFile(Cid);
+    await chainStorage.connect(nodes[1]).nodeAddFile(Cid);
     await chainStorage.connect(users[0]).userDeleteFile(Cid);
     expect(await fileStorage.nodeExist(Cid, nodeAddresses[0])).to.equal(true);
+    expect(await fileStorage.nodeExist(Cid, nodeAddresses[1])).to.equal(true);
   });
 
   it("should not nodeExist after node finish deleteFile task", async function () {
     await chainStorage.connect(users[0]).userAddFile(Cid, Duration, FileExt);
+
     await chainStorage.connect(nodes[0]).nodeCanAddFile(Cid, FileSize);
     await chainStorage.connect(nodes[1]).nodeCanAddFile(Cid, FileSize);
     await chainStorage.connect(nodes[0]).nodeAddFile(Cid);
+    await chainStorage.connect(nodes[1]).nodeAddFile(Cid);
     await chainStorage.connect(users[0]).userDeleteFile(Cid);
-    // await chainStorage.connect(nodes[0]).nodeAcceptTask(3);
-    // await chainStorage.connect(nodes[0]).nodeFinishTask(3, FileSize);
+
+    await chainStorage.connect(nodes[0]).nodeCanDeleteFile(Cid);
+    await chainStorage.connect(nodes[1]).nodeCanDeleteFile(Cid);
+    await chainStorage.connect(nodes[0]).nodeDeleteFile(Cid);
+    await chainStorage.connect(nodes[1]).nodeDeleteFile(Cid);
+
     expect(await fileStorage.nodeExist(Cid, nodeAddresses[0])).to.equal(false);
+    expect(await fileStorage.nodeExist(Cid, nodeAddresses[1])).to.equal(false);
   });
 
   it("should userEmpty before add file", async function () {
@@ -103,12 +114,6 @@ describe("File", function () {
     expect(await fileStorage.userEmpty(Cid)).to.equal(false);
   });
 
-  it("should userEmpty after add file then delete this file", async function () {
-    await chainStorage.connect(users[0]).userAddFile(Cid, Duration, FileExt);
-    await chainStorage.connect(users[0]).userDeleteFile(Cid);
-    expect(await fileStorage.userEmpty(Cid)).to.equal(true);
-  });
-
   it("should nodeEmpty before add file", async function () {
     expect(await fileStorage.nodeEmpty(Cid)).to.equal(true);
   });
@@ -118,6 +123,7 @@ describe("File", function () {
     await chainStorage.connect(nodes[0]).nodeCanAddFile(Cid, FileSize);
     await chainStorage.connect(nodes[1]).nodeCanAddFile(Cid, FileSize);
     await chainStorage.connect(nodes[0]).nodeAddFile(Cid);
+    await chainStorage.connect(nodes[1]).nodeAddFile(Cid);
     expect(await fileStorage.nodeEmpty(Cid)).to.equal(false);
   });
 
@@ -126,18 +132,26 @@ describe("File", function () {
     await chainStorage.connect(nodes[0]).nodeCanAddFile(Cid, FileSize);
     await chainStorage.connect(nodes[1]).nodeCanAddFile(Cid, FileSize);
     await chainStorage.connect(nodes[0]).nodeAddFile(Cid);
+    await chainStorage.connect(nodes[1]).nodeAddFile(Cid);
     await chainStorage.connect(users[0]).userDeleteFile(Cid);
     expect(await fileStorage.nodeEmpty(Cid)).to.equal(false);
   });
 
-  it("should nodeEmpty after node add file then node delete this file", async function () {
+  it("should nodeEmpty after node add file then user delete this file", async function () {
     await chainStorage.connect(users[0]).userAddFile(Cid, Duration, FileExt);
+
     await chainStorage.connect(nodes[0]).nodeCanAddFile(Cid, FileSize);
     await chainStorage.connect(nodes[1]).nodeCanAddFile(Cid, FileSize);
     await chainStorage.connect(nodes[0]).nodeAddFile(Cid);
+    await chainStorage.connect(nodes[1]).nodeAddFile(Cid);
+
     await chainStorage.connect(users[0]).userDeleteFile(Cid);
-    // await chainStorage.connect(nodes[0]).nodeAcceptTask(3);
-    // await chainStorage.connect(nodes[0]).nodeFinishTask(3, FileSize);
+
+    await chainStorage.connect(nodes[0]).nodeCanDeleteFile(Cid);
+    await chainStorage.connect(nodes[1]).nodeCanDeleteFile(Cid);
+    await chainStorage.connect(nodes[0]).nodeDeleteFile(Cid);
+    await chainStorage.connect(nodes[1]).nodeDeleteFile(Cid);
+
     expect(await fileStorage.nodeEmpty(Cid)).to.equal(true);
   });
 
@@ -152,7 +166,19 @@ describe("File", function () {
 
   it("totalFileNumber should be > 0 after add file then delete this file", async function () {
     await chainStorage.connect(users[0]).userAddFile(Cid, Duration, FileExt);
+
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cid, FileSize);
+    await chainStorage.connect(nodes[1]).nodeCanAddFile(Cid, FileSize);
+    await chainStorage.connect(nodes[0]).nodeAddFile(Cid);
+    await chainStorage.connect(nodes[1]).nodeAddFile(Cid);
+
     await chainStorage.connect(users[0]).userDeleteFile(Cid);
+
+    await chainStorage.connect(nodes[0]).nodeCanDeleteFile(Cid);
+    await chainStorage.connect(nodes[1]).nodeCanDeleteFile(Cid);
+    await chainStorage.connect(nodes[0]).nodeDeleteFile(Cid);
+    await chainStorage.connect(nodes[1]).nodeDeleteFile(Cid);
+
     expect(await fileStorage.getFileNumber()).to.equal(0);
   });
 
@@ -248,27 +274,27 @@ describe("File", function () {
 
   it("exist", async function () {
     await chainStorage.connect(users[0]).userAddFile(Cid, Duration, FileExt);
+
     await chainStorage.connect(nodes[0]).nodeCanAddFile(Cid, FileSize);
     await chainStorage.connect(nodes[1]).nodeCanAddFile(Cid, FileSize);
     await chainStorage.connect(nodes[0]).nodeAddFile(Cid);
+    await chainStorage.connect(nodes[1]).nodeAddFile(Cid);
+
     await chainStorage.connect(users[1]).userAddFile(Cid, Duration, FileExt);
+
     expect(await fileStorage.exist(Cid)).to.equal(true);
 
     await chainStorage.connect(users[0]).userDeleteFile(Cid);
     expect(await fileStorage.exist(Cid)).to.equal(true);
 
     await chainStorage.connect(users[1]).userDeleteFile(Cid);
-    // await chainStorage.connect(nodes[0]).nodeAcceptTask(3);
-    // await chainStorage.connect(nodes[0]).nodeFinishTask(3, FileSize);
-    // expect(await fileStorage.exist(Cid)).to.equal(false);
-    //
-    // await chainStorage.connect(nodes[1]).nodeAcceptTask(2);
-    // await chainStorage.connect(nodes[1]).nodeFinishTask(2, FileSize);
-    // expect(await fileStorage.exist(Cid)).to.equal(false);
-    //
-    // await chainStorage.connect(nodes[1]).nodeAcceptTask(4);
-    // await chainStorage.connect(nodes[1]).nodeFinishTask(4, FileSize);
-    // expect(await fileStorage.exist(Cid)).to.equal(false);
+
+    await chainStorage.connect(nodes[0]).nodeCanDeleteFile(Cid);
+    await chainStorage.connect(nodes[1]).nodeCanDeleteFile(Cid);
+    await chainStorage.connect(nodes[0]).nodeDeleteFile(Cid);
+    await chainStorage.connect(nodes[1]).nodeDeleteFile(Cid);
+
+    expect(await fileStorage.exist(Cid)).to.equal(false);
   });
 
   it("owners", async function () {
@@ -280,6 +306,8 @@ describe("File", function () {
     await chainStorage.connect(nodes[0]).nodeCanAddFile(Cid, FileSize);
     await chainStorage.connect(nodes[1]).nodeCanAddFile(Cid, FileSize);
     await chainStorage.connect(nodes[0]).nodeAddFile(Cid);
+    await chainStorage.connect(nodes[1]).nodeAddFile(Cid);
+
     await chainStorage.connect(users[1]).userAddFile(Cid, Duration, FileExt);
     expect(await fileStorage.userExist(Cid, userAddresses[0])).to.equal(true);
     expect(await fileStorage.userExist(Cid, userAddresses[1])).to.equal(true);
@@ -292,25 +320,19 @@ describe("File", function () {
     expect(await fileStorage.userExist(Cid, userAddresses[0])).to.equal(false);
     expect(await fileStorage.userExist(Cid, userAddresses[1])).to.equal(false);
 
-    // await chainStorage.connect(nodes[0]).nodeAcceptTask(3);
-    // await chainStorage.connect(nodes[0]).nodeFinishTask(3, FileSize);
-    // expect(await fileStorage.userExist(Cid, userAddresses[0])).to.equal(false);
-    // expect(await fileStorage.userExist(Cid, userAddresses[1])).to.equal(false);
-    //
-    // await chainStorage.connect(nodes[1]).nodeAcceptTask(2);
-    // await chainStorage.connect(nodes[1]).nodeFinishTask(2, FileSize);
-    // expect(await fileStorage.userExist(Cid, userAddresses[0])).to.equal(false);
-    // expect(await fileStorage.userExist(Cid, userAddresses[1])).to.equal(false);
-    //
-    // await chainStorage.connect(nodes[1]).nodeAcceptTask(4);
-    // await chainStorage.connect(nodes[1]).nodeFinishTask(4, FileSize);
-    // expect(await fileStorage.userExist(Cid, userAddresses[0])).to.equal(false);
-    // expect(await fileStorage.userExist(Cid, userAddresses[1])).to.equal(false);
+    await chainStorage.connect(nodes[0]).nodeCanDeleteFile(Cid);
+    await chainStorage.connect(nodes[1]).nodeCanDeleteFile(Cid);
+    await chainStorage.connect(nodes[0]).nodeDeleteFile(Cid);
+    expect(await fileStorage.userExist(Cid, userAddresses[0])).to.equal(false);
+    expect(await fileStorage.userExist(Cid, userAddresses[1])).to.equal(false);
+
+    await chainStorage.connect(nodes[1]).nodeDeleteFile(Cid);
+    expect(await fileStorage.userExist(Cid, userAddresses[0])).to.equal(false);
+    expect(await fileStorage.userExist(Cid, userAddresses[1])).to.equal(false);
   });
 
   it("nodes", async function () {
     await chainStorage.connect(users[0]).userAddFile(Cid, Duration, FileExt);
-    expect(await taskStorage.getCurrentTid()).to.equal(2);
 
     await chainStorage.connect(nodes[0]).nodeCanAddFile(Cid, FileSize);
     await chainStorage.connect(nodes[1]).nodeCanAddFile(Cid, FileSize);
@@ -378,26 +400,6 @@ describe("File", function () {
     await chainStorage
       .connect(users[0])
       .userAddFile(Cids[2], Duration, FileExt);
-
-    expect(
-      await fileStorage.getCid(
-        "0xdda4e1efafe56f53f4025cd0708f6bdff673e1aa3995eea9f023c6eec2a7eb4a"
-      )
-    ).to.equal(Cids[0]);
-    expect(
-      await fileStorage.getCid(
-        "0xf8af37dd2f20cebb5f9720a4c63a7ceaa036a5042a30b87a19832e0fa530c84c"
-      )
-    ).to.equal(Cids[1]);
-    expect(
-      await fileStorage.getCid(
-        "0xd4a832f0884972948d6eee2c2daa0e91def2d4bd5f4f899c9eda1d78a28a9b44"
-      )
-    ).to.equal(Cids[2]);
-
-    await chainStorage.connect(users[0]).userDeleteFile(Cids[0]);
-    await chainStorage.connect(users[0]).userDeleteFile(Cids[1]);
-    await chainStorage.connect(users[0]).userDeleteFile(Cids[2]);
 
     expect(
       await fileStorage.getCid(
