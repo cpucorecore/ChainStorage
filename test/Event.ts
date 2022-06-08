@@ -10,14 +10,12 @@ import {
   users,
   userManager,
   userAddresses,
-  taskManager,
-  nodeAddresses,
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
 
 describe("Event", function () {
   before(async () => {
-    await prepareContext(2, 2, 2, 0, 0, 2);
+    await prepareContext(2, 2, 0, 0, 2);
   });
 
   beforeEach(async function () {
@@ -31,21 +29,11 @@ describe("Event", function () {
   it("should emit UserAction/TaskIssued/TaskStatusChanged event when user addFile", async function () {
     const user1 = users[0];
     const user1Address = userAddresses[0];
-    const node1Address = nodeAddresses[0];
-    const node2Address = nodeAddresses[1];
 
     await expect(
       chainStorage.connect(user1).userAddFile(Cid, Duration, FileExt)
     )
       .to.emit(userManager, "UserAction")
-      .withArgs(user1Address, 0, Cid)
-      .to.emit(taskManager, "TaskIssued")
-      .withArgs(node1Address, 1)
-      .to.emit(taskManager, "TaskIssued")
-      .withArgs(node2Address, 2)
-      .to.emit(taskManager, "TaskStatusChanged")
-      .withArgs(1, node1Address, 0, 0, 1)
-      .to.emit(taskManager, "TaskStatusChanged")
-      .withArgs(2, node2Address, 0, 0, 1);
+      .withArgs(user1Address, 0, Cid);
   });
 });
