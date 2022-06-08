@@ -5,12 +5,9 @@ import "./base/Importable.sol";
 import "./base/ExternalStorable.sol";
 import "./interfaces/INodeManager.sol";
 import "./interfaces/storages/INodeStorage.sol";
-import "./interfaces/ISetting.sol";
 import "./interfaces/IFileManager.sol";
 
 contract NodeManager is Importable, ExternalStorable, INodeManager {
-    event NodeStatusChanged(address indexed nodeAddress, uint256 from, uint256 to);
-
     event TryRequestAddFile(string cid);
     event RequestAddFile(string cid, address[] nodeAddresses);
 
@@ -21,7 +18,6 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
         setContractName(CONTRACT_NODE_MANAGER);
 
         imports = [
-        CONTRACT_SETTING,
         CONTRACT_FILE_MANAGER,
         CONTRACT_MONITOR,
         CONTRACT_CHAIN_STORAGE
@@ -32,10 +28,6 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
         return INodeStorage(getStorage());
     }
 
-    function _Setting() private view returns (ISetting) {
-        return ISetting(requireAddress(CONTRACT_SETTING));
-    }
-
     function _FileManager() private view returns (IFileManager) {
         return IFileManager(requireAddress(CONTRACT_FILE_MANAGER));
     }
@@ -44,18 +36,17 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
         mustAddress(CONTRACT_CHAIN_STORAGE);
         require(!_Storage().exist(nodeAddress), "N:node exist");
         _Storage().newNode(nodeAddress, storageTotal, ext);
-        emit NodeStatusChanged(nodeAddress, DefaultStatus, NodeRegistered);
     }
 
     function setExt(address nodeAddress, string calldata ext) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
-        _nodeMustExist(nodeAddress);
+        _checkNodeExist(nodeAddress);
         _Storage().setExt(nodeAddress, ext);
     }
 
     function setStorageTotal(address nodeAddress, uint256 storageTotal) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
-        _nodeMustExist(nodeAddress);
+        _checkNodeExist(nodeAddress);
         require(storageTotal >= _Storage().getStorageUsed(nodeAddress), "N:too small");
         _Storage().setStorageTotal(nodeAddress, storageTotal);
     }
@@ -63,41 +54,10 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
     function deRegister(address nodeAddress) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
 
-        _nodeMustExist(nodeAddress);
-        uint256 status = _Storage().getStatus(nodeAddress);
-        require(NodeRegistered == status || NodeMaintain == status, "N:wrong status must[RM]");
+        _checkNodeExist(nodeAddress);
         (bytes32[] memory cidHashes,) = _Storage().getCidHashes(nodeAddress, 1, 50);
         require(0 == cidHashes.length, "N:cid not empty");
         _Storage().deleteNode(nodeAddress);
-
-        emit NodeStatusChanged(nodeAddress, status, DefaultStatus);
-    }
-
-    function online(address nodeAddress) external {
-        mustAddress(CONTRACT_CHAIN_STORAGE);
-
-        _nodeMustExist(nodeAddress);
-
-        uint256 status = _Storage().getStatus(nodeAddress);
-        require(NodeRegistered == status || NodeMaintain == status || NodeOffline == status, "N:wrong status[RMO]");
-
-        _Storage().setStatus(nodeAddress, NodeOnline);
-        _Storage().addOnlineNode(nodeAddress);
-
-        emit NodeStatusChanged(nodeAddress, status, NodeOnline);
-    }
-
-    function maintain(address nodeAddress) external {
-        mustAddress(CONTRACT_CHAIN_STORAGE);
-        _nodeMustExist(nodeAddress);
-
-        uint256 status = _Storage().getStatus(nodeAddress);
-        require(NodeOnline == status, "N:wrong status must[O]");
-
-        _Storage().setStatus(nodeAddress, NodeMaintain);
-        _Storage().deleteOnlineNode(nodeAddress);
-
-        emit NodeStatusChanged(nodeAddress, status, NodeMaintain);
     }
 
     function addFile(string calldata cid) external {
@@ -108,6 +68,7 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
     function nodeCanAddFile(address nodeAddress, string calldata cid, uint256 size) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
 
+        // TODO check the node: do nodeCanAddFile but not do nodeAddFile, and tell the node by event
         uint256 count = _Storage().nodeCanAddFile(nodeAddress, cid, size);
         if (count == _FileManager().getReplica(cid)) {
         (bool sizeConsistent, uint256 size) = _Storage().isSizeConsistent(cid);
@@ -144,6 +105,7 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
     function nodeCanDeleteFile(address nodeAddress, string calldata cid) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
 
+        // TODO check the node: do nodeCanAddFile but not do nodeAddFile, and tell the node by event
         bool allNodeCanDeleteFile = _Storage().nodeCanDeleteFile(nodeAddress, cid);
         if (allNodeCanDeleteFile) {
             _FileManager().onBeginDeleteFile(cid);
@@ -165,17 +127,7 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
         }
     }
 
-    function _nodeMustExist(address nodeAddress) private view {
+    function _checkNodeExist(address nodeAddress) private view {
         require(_Storage().exist(nodeAddress), "N:node not exist");
-    }
-
-    function _offline(address nodeAddress) private {
-        uint256 status = _Storage().getStatus(nodeAddress);
-        require(NodeOnline == status, "N:wrong status must[O]");
-
-        _Storage().setStatus(nodeAddress, NodeOffline);
-        _Storage().deleteOnlineNode(nodeAddress);
-
-        emit NodeStatusChanged(nodeAddress, status, NodeOffline);
     }
 }

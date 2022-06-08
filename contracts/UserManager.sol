@@ -65,7 +65,7 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
         mustAddress(CONTRACT_CHAIN_STORAGE);
 
         require(_Storage().exist(userAddress), "U:user not exist");
-        require(0 == _Storage().getFileNumber(userAddress), "U:files not empty");
+        require(0 == _Storage().getFileCount(userAddress), "U:files not empty");
 
         _Storage().deleteUser(userAddress);
     }

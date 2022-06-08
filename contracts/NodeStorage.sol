@@ -12,22 +12,41 @@ contract NodeStorage is ExternalStorage, INodeStorage {
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
+    struct File {
+        uint256 size;
+        bool isAdded;
+        bool isDeleted;
+    }
+
     struct Node {
-        uint256 status;
         StorageSpaceManager.StorageSpace storageSpace;
+        EnumerableSet.Bytes32Set cidHashes;
         string ext;
     }
 
     mapping(address => Node) private nodes;
     EnumerableSet.AddressSet private nodeAddresses;
-    EnumerableSet.AddressSet private onlineNodeAddresses;
+    mapping(address => mapping(bytes32 => File)) private files;
+
+    mapping(string => EnumerableSet.AddressSet) private cid2nodeAddresses;
+    mapping(address => EnumerableSet.Bytes32Set) private node2cidHashes;
+
+    // for addFile
+    mapping(string => EnumerableSet.AddressSet) private cid2canAddFileNodeAddresses;
+
+    // for deleteFile
+    mapping(string => EnumerableSet.AddressSet) private cid2canDeleteFileNodeAddresses;
 
     constructor(address _manager) public ExternalStorage(_manager) {}
 
-    // write functions
+    function exist(address nodeAddress) public view returns (bool) {
+        return nodes[nodeAddress].storageSpace.total > 0;
+    }
+
     function newNode(address nodeAddress, uint256 storageTotal, string calldata ext) external {
         mustManager(managerName);
-        nodes[nodeAddress] = Node(NodeRegistered, StorageSpaceManager.StorageSpace(0, storageTotal), ext);
+        EnumerableSet.Bytes32Set memory cidHashes;
+        nodes[nodeAddress] = Node(StorageSpaceManager.StorageSpace(0, storageTotal), cidHashes, ext);
         nodeAddresses.add(nodeAddress);
     }
 
@@ -35,17 +54,20 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         mustManager(managerName);
         delete nodes[nodeAddress];
         nodeAddresses.remove(nodeAddress);
-        onlineNodeAddresses.remove(nodeAddress);
-    }
-
-    function setStorageTotal(address nodeAddress, uint256 value) external {
-        mustManager(managerName);
-        nodes[nodeAddress].storageSpace.total = value;
     }
 
     function setExt(address nodeAddress, string calldata ext) external {
         mustManager(managerName);
         nodes[nodeAddress].ext = ext;
+    }
+
+    function getExt(address nodeAddress) external view returns (string memory) {
+        return nodes[nodeAddress].ext;
+    }
+
+    function setStorageTotal(address nodeAddress, uint256 value) external {
+        mustManager(managerName);
+        nodes[nodeAddress].storageSpace.total = value;
     }
 
     function useStorage(address nodeAddress, uint256 size) external {
@@ -56,28 +78,8 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         nodes[nodeAddress].storageSpace.freeSpace(size);
     }
 
-    function addOnlineNode(address nodeAddress) external {
-        mustManager(managerName);
-        onlineNodeAddresses.add(nodeAddress);
-    }
-
-    function deleteOnlineNode(address nodeAddress) external {
-        mustManager(managerName);
-        onlineNodeAddresses.remove(nodeAddress);
-    }
-
-    function setStatus(address nodeAddress, uint256 status) external {
-        mustManager(managerName);
-        nodes[nodeAddress].status = status;
-    }
-
-    // read functions
-    function exist(address nodeAddress) public view returns (bool) {
-        return DefaultStatus != nodes[nodeAddress].status;
-    }
-
-    function getExt(address nodeAddress) external view returns (string memory) {
-        return nodes[nodeAddress].ext;
+    function availableSpace(address nodeAddress) external view returns (uint256) {
+        return nodes[nodeAddress].storageSpace.availableSpace();
     }
 
     function getStorageTotal(address nodeAddress) external view returns (uint256) {
@@ -88,23 +90,15 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         return nodes[nodeAddress].storageSpace.used;
     }
 
-    function getStatus(address nodeAddress) external view returns (uint256) {
-        return nodes[nodeAddress].status;
-    }
-
-    function getTotalNodeNumber() external view returns (uint256) {
+    function getNodeCount() external view returns (uint256) {
         return nodeAddresses.length();
     }
 
-    function getTotalOnlineNodeNumber() external view returns (uint256) {
-        return onlineNodeAddresses.length();
-    }
-
-    function getAllNodeAddresses() public view returns (address[] memory) {
+    function getAllNodeAddresses() external view returns (address[] memory) {
         return nodeAddresses.values();
     }
 
-    function getAllNodeAddresses(uint256 pageSize, uint256 pageNumber) public view returns (address[] memory, bool) {
+    function getAllNodeAddresses(uint256 pageSize, uint256 pageNumber) external view returns (address[] memory, bool) {
         Paging.Page memory page = Paging.getPage(nodeAddresses.length(), pageSize, pageNumber);
         uint256 start = page.pageNumber.sub(1).mul(page.pageSize);
         address[] memory result = new address[](page.pageRecords);
@@ -114,56 +108,41 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         return (result, page.pageNumber == page.totalPages);
     }
 
-    function getAllOnlineNodeAddresses() public view returns (address[] memory) {
-        return onlineNodeAddresses.values();
+    function fileExist(address nodeAddress, string calldata cid) external view returns (bool) {
+        bytes32 cidHash = keccak256(bytes(cid));
+        return nodes[nodeAddress].cidHashes.contains(cidHash);
     }
 
-    function getAllOnlineNodeAddresses(uint256 pageSize, uint256 pageNumber) public view returns (address[] memory, bool) {
-        Paging.Page memory page = Paging.getPage(onlineNodeAddresses.length(), pageSize, pageNumber);
-        uint256 start = page.pageNumber.sub(1).mul(page.pageSize);
-        address[] memory result = new address[](page.pageRecords);
-        for(uint256 i=0; i<page.pageRecords; i++) {
-            result[i] = onlineNodeAddresses.at(start+i);
-        }
-        return (result, page.pageNumber == page.totalPages);
+    function addFile(address nodeAddress, string calldata cid, uint256 size) external {
+        mustManager(managerName);
+        bytes32 cidHash = keccak256(bytes(cid));
+        files[nodeAddress][cidHash] = File(size, false, false);
+        nodes[nodeAddress].cidHashes.add(cidHash);
     }
 
-
-
-
-
-
-    struct CidState {
-        uint256 size;
-        bool isAddFileFinished;
-        bool isDeleteFileFinished;
+    function deleteFile(address nodeAddress, string calldata cid) external {
+        mustManager(managerName);
+        bytes32 cidHash = keccak256(bytes(cid));
+        delete files[nodeAddress][cidHash];
+        nodes[nodeAddress].cidHashes.remove(cidHash);
     }
 
-    mapping(address => mapping(string => CidState)) private node2cidState;
-    mapping(string => EnumerableSet.AddressSet) private cid2nodeAddresses;
-    mapping(address => EnumerableSet.Bytes32Set) private node2cidHashes;
-
-    // for addFile
-    mapping(string => EnumerableSet.AddressSet) private cid2canAddFileNodeAddresses;
-
-    // for deleteFile
-    mapping(string => EnumerableSet.AddressSet) private cid2canDeleteFileNodeAddresses;
-
+    /////////////////////////// [add,delete] file logic ////////////////////////////
     function nodeCanAddFile(address nodeAddress, string calldata cid, uint256 size) external returns (uint256) {
         mustManager(managerName);
 
         if (!cid2canAddFileNodeAddresses[cid].contains(nodeAddress)) {
             cid2canAddFileNodeAddresses[cid].add(nodeAddress);
-            node2cidState[nodeAddress][cid] = CidState(size, false, false);
+            files[nodeAddress][cid] = File(size, false, false);
         }
         return cid2canAddFileNodeAddresses[cid].length();
     }
 
     function isSizeConsistent(string calldata cid) external view returns (bool, uint256) {
-        uint256 size = node2cidState[cid2canAddFileNodeAddresses[cid].at(0)][cid].size;
+        uint256 size = files[cid2canAddFileNodeAddresses[cid].at(0)][cid].size;
 
         for(uint256 i=1; i<cid2canAddFileNodeAddresses[cid].length(); i++) {
-            if (size != node2cidState[cid2canAddFileNodeAddresses[cid].at(i)][cid].size) {
+            if (size != files[cid2canAddFileNodeAddresses[cid].at(i)][cid].size) {
                 return (false, 0);
             }
         }
@@ -184,7 +163,7 @@ contract NodeStorage is ExternalStorage, INodeStorage {
     }
 
     function nodeAddFile(address nodeAddress, string calldata cid) external returns (bool) {
-        node2cidState[nodeAddress][cid].isAddFileFinished = true;
+        files[nodeAddress][cid].isAdded = true;
         if (!cid2nodeAddresses[cid].contains(nodeAddress)) {
             cid2nodeAddresses[cid].add(nodeAddress);
         }
@@ -196,7 +175,7 @@ contract NodeStorage is ExternalStorage, INodeStorage {
 
         bool allNodeFinishAddFile = true;
         for(uint i=0; i<cid2canAddFileNodeAddresses[cid].length(); i++) {
-            if (false == node2cidState[cid2canAddFileNodeAddresses[cid].at(i)][cid].isAddFileFinished) {
+            if (false == files[cid2canAddFileNodeAddresses[cid].at(i)][cid].isAdded) {
                 allNodeFinishAddFile = false;
             }
         }
@@ -232,7 +211,7 @@ contract NodeStorage is ExternalStorage, INodeStorage {
     }
 
     function nodeDeleteFile(address nodeAddress, string calldata cid) external returns (bool) {
-        node2cidState[nodeAddress][cid].isDeleteFileFinished = true;
+        files[nodeAddress][cid].isDeleted = true;
         if (cid2nodeAddresses[cid].contains(nodeAddress)) {
             cid2nodeAddresses[cid].remove(nodeAddress);
         }
@@ -244,7 +223,7 @@ contract NodeStorage is ExternalStorage, INodeStorage {
 
         bool allNodeFinishDeleteFile = true;
         for(uint i=0; i<cid2canDeleteFileNodeAddresses[cid].length(); i++) {
-            if (false == node2cidState[cid2canDeleteFileNodeAddresses[cid].at(i)][cid].isDeleteFileFinished) {
+            if (false == files[cid2canDeleteFileNodeAddresses[cid].at(i)][cid].isDeleted) {
                 allNodeFinishDeleteFile = false;
             }
         }

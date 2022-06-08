@@ -8,18 +8,15 @@ import "./lib/Paging.sol";
 contract MonitorStorage is ExternalStorage, IMonitorStorage {
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    mapping(address=>MonitorItem) monitors;
+    mapping(address => MonitorItem) monitors;
     EnumerableSet.AddressSet monitorAddresses;
     EnumerableSet.AddressSet onlineMonitorAddresses;
-
-    mapping(address=>uint256) monitor2rid; // rid=0: no report;
-    mapping(address=>Report[]) monitor2reports;
 
     constructor(address _manager) public ExternalStorage(_manager) {}
 
     function newMonitor(address monitorAddress, string calldata ext) external {
         mustManager(managerName);
-        monitors[monitorAddress] = MonitorItem(MonitorRegistered, 0, 0, ext, true);
+        monitors[monitorAddress] = MonitorItem(ext, true);
         monitorAddresses.add(monitorAddress);
     }
 
@@ -33,9 +30,9 @@ contract MonitorStorage is ExternalStorage, IMonitorStorage {
         return monitors[monitorAddress].exist;
     }
 
-    function getMonitor(address monitorAddress) external view returns (uint256, uint256, uint256, string memory) {
+    function getMonitor(address monitorAddress) external view returns (string memory, bool) {
         MonitorItem storage monitor = monitors[monitorAddress];
-        return (monitor.status, monitor.firstOnlineTid, monitor.currentTid, monitor.ext);
+        return (monitor.ext, monitor.exist);
     }
 
     function getExt(address monitorAddress) external view returns (string memory) {
@@ -44,33 +41,6 @@ contract MonitorStorage is ExternalStorage, IMonitorStorage {
 
     function setExt(address monitorAddress, string calldata ext) external {
         monitors[monitorAddress].ext = ext;
-    }
-
-    function getCurrentTid(address monitorAddress) external view returns (uint256) {
-        return monitors[monitorAddress].currentTid;
-    }
-
-    function setCurrentTid(address monitorAddress, uint256 tid) external {
-        mustManager(managerName);
-        monitors[monitorAddress].currentTid = tid;
-    }
-
-    function getFirstOnlineTid(address monitorAddress) external view returns (uint256) {
-        return monitors[monitorAddress].firstOnlineTid;
-    }
-
-    function setFirstOnlineTid(address monitorAddress, uint256 tid) external {
-        mustManager(managerName);
-        monitors[monitorAddress].firstOnlineTid = tid;
-    }
-
-    function getStatus(address monitorAddress) external view returns (uint256) {
-        return monitors[monitorAddress].status;
-    }
-
-    function setStatus(address monitorAddress, uint256 status) external {
-        mustManager(managerName);
-        monitors[monitorAddress].status = status;
     }
 
     function addOnlineMonitor(address monitorAddress) external {
@@ -101,20 +71,5 @@ contract MonitorStorage is ExternalStorage, IMonitorStorage {
             result[i] = onlineMonitorAddresses.at(start+i);
         }
         return (result, page.pageNumber == page.totalPages);
-    }
-
-    function addReport(address monitorAddress, uint256 tid, uint256 reportType, uint256 timestamp) external {
-        mustManager(managerName);
-        uint256 index = monitor2reports[monitorAddress].push(Report(tid, reportType, timestamp));
-        monitor2rid[monitorAddress] = index;
-    }
-
-    function getReportNumber(address monitorAddress) external view returns (uint256) {
-        return monitor2rid[monitorAddress];
-    }
-
-    function getReport(address monitorAddress, uint256 index) external view returns (uint256, uint256, uint256) {
-        Report storage report = monitor2reports[monitorAddress][index];
-        return (report.tid, report.reportType, report.timestamp);
     }
 }
