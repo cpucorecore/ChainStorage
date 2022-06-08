@@ -12,30 +12,21 @@ contract NodeStorage is ExternalStorage, INodeStorage {
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
-    struct File {
-        uint256 size;
-        bool isAdded;
-        bool isDeleted;
-    }
-
     struct Node {
         StorageSpaceManager.StorageSpace storageSpace;
+        EnumerableSet.Bytes32Set canAddFileCidHashes;
         EnumerableSet.Bytes32Set cidHashes;
+        EnumerableSet.Bytes32Set canDeleteFileCidHashes;
         string ext;
     }
 
     mapping(address => Node) private nodes;
     EnumerableSet.AddressSet private nodeAddresses;
-    mapping(address => mapping(bytes32 => File)) private files;
+    mapping(address => mapping(bytes32 => uint256)) private files;
 
-    mapping(string => EnumerableSet.AddressSet) private cid2nodeAddresses;
-    mapping(address => EnumerableSet.Bytes32Set) private node2cidHashes;
-
-    // for addFile
-    mapping(string => EnumerableSet.AddressSet) private cid2canAddFileNodeAddresses;
-
-    // for deleteFile
-    mapping(string => EnumerableSet.AddressSet) private cid2canDeleteFileNodeAddresses;
+    mapping(bytes32 => EnumerableSet.AddressSet) private cidHash2canAddFileNodeAddresses;
+    mapping(bytes32 => EnumerableSet.AddressSet) private cidHash2nodeAddresses;
+    mapping(bytes32 => EnumerableSet.AddressSet) private cidHash2canDeleteFileNodeAddresses;
 
     constructor(address _manager) public ExternalStorage(_manager) {}
 
@@ -45,8 +36,16 @@ contract NodeStorage is ExternalStorage, INodeStorage {
 
     function newNode(address nodeAddress, uint256 storageTotal, string calldata ext) external {
         mustManager(managerName);
+        EnumerableSet.Bytes32Set memory canAddFileCidHashes;
         EnumerableSet.Bytes32Set memory cidHashes;
-        nodes[nodeAddress] = Node(StorageSpaceManager.StorageSpace(0, storageTotal), cidHashes, ext);
+        EnumerableSet.Bytes32Set memory canDeleteFileCidHashes;
+        nodes[nodeAddress] = Node(
+            StorageSpaceManager.StorageSpace(0, storageTotal),
+            canAddFileCidHashes,
+            cidHashes,
+            canDeleteFileCidHashes,
+            ext
+        );
         nodeAddresses.add(nodeAddress);
     }
 
@@ -116,7 +115,7 @@ contract NodeStorage is ExternalStorage, INodeStorage {
     function addFile(address nodeAddress, string calldata cid, uint256 size) external {
         mustManager(managerName);
         bytes32 cidHash = keccak256(bytes(cid));
-        files[nodeAddress][cidHash] = File(size, false, false);
+        files[nodeAddress][cidHash] = size;
         nodes[nodeAddress].cidHashes.add(cidHash);
     }
 
@@ -131,18 +130,31 @@ contract NodeStorage is ExternalStorage, INodeStorage {
     function nodeCanAddFile(address nodeAddress, string calldata cid, uint256 size) external returns (uint256) {
         mustManager(managerName);
 
-        if (!cid2canAddFileNodeAddresses[cid].contains(nodeAddress)) {
-            cid2canAddFileNodeAddresses[cid].add(nodeAddress);
-            files[nodeAddress][cid] = File(size, false, false);
+        bytes32 cidHash = keccak256(bytes(cid));
+        if (!cidHash2canAddFileNodeAddresses[cidHash].contains(nodeAddress)) {
+            cidHash2canAddFileNodeAddresses[cidHash].add(nodeAddress);
+            files[nodeAddress][cidHash] = size;
         }
-        return cid2canAddFileNodeAddresses[cid].length();
+        if (!nodes[nodeAddress].canAddFileCidHashes.contains(cidHash)) {
+            nodes[nodeAddress].canAddFileCidHashes.add(cidHash);
+        }
+        return cidHash2canAddFileNodeAddresses[cidHash].length();
+    }
+
+    function getCanAddFileCount(address nodeAddress) external view returns (uint256) {
+        return nodes[nodeAddress].canAddFileCidHashes.length();
+    }
+
+    function getCanAddFileCidHashes(address nodeAddress) external view returns (bytes32[] memory) {
+        return nodes[nodeAddress].canAddFileCidHashes.values();
     }
 
     function isSizeConsistent(string calldata cid) external view returns (bool, uint256) {
-        uint256 size = files[cid2canAddFileNodeAddresses[cid].at(0)][cid].size;
+        bytes32 cidHash = keccak256(bytes(cid));
+        uint256 size = files[cidHash2canAddFileNodeAddresses[cidHash].at(0)][cidHash];
 
-        for(uint256 i=1; i<cid2canAddFileNodeAddresses[cid].length(); i++) {
-            if (size != files[cid2canAddFileNodeAddresses[cid].at(i)][cid].size) {
+        for(uint i=1; i<cidHash2canAddFileNodeAddresses[cidHash].length(); i++) {
+            if (size != files[cidHash2canAddFileNodeAddresses[cidHash].at(i)][cidHash]) {
                 return (false, 0);
             }
         }
@@ -151,32 +163,42 @@ contract NodeStorage is ExternalStorage, INodeStorage {
     }
 
     function getCanAddFileNodeAddresses(string calldata cid) external view returns (address[] memory) {
-        return cid2canAddFileNodeAddresses[cid].values();
+        bytes32 cidHash = keccak256(bytes(cid));
+        return cidHash2canAddFileNodeAddresses[cidHash].values();
     }
 
     function isCanAddFile(address nodeAddress, string calldata cid) external view returns (bool) {
-        return cid2canAddFileNodeAddresses[cid].contains(nodeAddress);
+        bytes32 cidHash = keccak256(bytes(cid));
+        return cidHash2canAddFileNodeAddresses[cidHash].contains(nodeAddress);
     }
 
     function isFileAdded(address nodeAddress, string calldata cid) external view returns (bool) {
-        return cid2nodeAddresses[cid].contains(nodeAddress);
+        bytes32 cidHash = keccak256(bytes(cid));
+        return cidHash2nodeAddresses[cidHash].contains(nodeAddress);
     }
 
     function nodeAddFile(address nodeAddress, string calldata cid) external returns (bool) {
-        files[nodeAddress][cid].isAdded = true;
-        if (!cid2nodeAddresses[cid].contains(nodeAddress)) {
-            cid2nodeAddresses[cid].add(nodeAddress);
-        }
+        mustManager(managerName);
 
         bytes32 cidHash = keccak256(bytes(cid));
-        if (!node2cidHashes[nodeAddress].contains(cidHash)) {
-            node2cidHashes[nodeAddress].add(cidHash);
+        if (nodes[nodeAddress].canAddFileCidHashes.contains(cidHash)) {
+            nodes[nodeAddress].canAddFileCidHashes.remove(cidHash);
+        }
+
+        if (!nodes[nodeAddress].cidHashes.contains(cidHash)) {
+            nodes[nodeAddress].cidHashes.add(cidHash);
+        }
+
+        if (!cidHash2nodeAddresses[cidHash].contains(nodeAddress)) {
+            cidHash2nodeAddresses[cidHash].add(nodeAddress);
         }
 
         bool allNodeFinishAddFile = true;
-        for(uint i=0; i<cid2canAddFileNodeAddresses[cid].length(); i++) {
-            if (false == files[cid2canAddFileNodeAddresses[cid].at(i)][cid].isAdded) {
+        address[] memory nodeAddresses = cidHash2canAddFileNodeAddresses[cidHash].values();
+        for(uint i=0; i<nodeAddresses.length; i++) {
+            if (!nodes[nodeAddresses[i]].cidHashes.contains(cidHash)) {
                 allNodeFinishAddFile = false;
+                break;
             }
         }
 
@@ -184,20 +206,26 @@ contract NodeStorage is ExternalStorage, INodeStorage {
     }
 
     function getNodeAddresses(string memory cid) public view returns (address[] memory) {
-        return cid2nodeAddresses[cid].values();
+        bytes32 cidHash = keccak256(bytes(cid));
+        return cidHash2nodeAddresses[cidHash].values();
     }
 
     function nodeCanDeleteFile(address nodeAddress, string calldata cid) external returns (bool) {
         mustManager(managerName);
 
-        if (!cid2canDeleteFileNodeAddresses[cid].contains(nodeAddress)) {
-            cid2canDeleteFileNodeAddresses[cid].add(nodeAddress);
+        bytes32 cidHash = keccak256(bytes(cid));
+        if (!cidHash2canDeleteFileNodeAddresses[cidHash].contains(nodeAddress)) {
+            cidHash2canDeleteFileNodeAddresses[cidHash].add(nodeAddress);
+        }
+
+        if (!nodes[nodeAddress].canDeleteFileCidHashes.contains(cidHash)) {
+            nodes[nodeAddress].canDeleteFileCidHashes.add(cidHash);
         }
 
         address[] memory nodeAddresses = getNodeAddresses(cid);
         bool allNodeCanDeleteFile = true;
         for(uint i=0; i<nodeAddresses.length; i++) {
-            if (!cid2canDeleteFileNodeAddresses[cid].contains(nodeAddresses[i])) {
+            if (!cidHash2canDeleteFileNodeAddresses[cidHash].contains(nodeAddresses[i])) {
                 allNodeCanDeleteFile = false;
                 break;
             }
@@ -206,25 +234,37 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         return allNodeCanDeleteFile;
     }
 
+    function getCanDeleteFileCount(address nodeAddress) external view returns (uint256) {
+        return nodes[nodeAddress].canDeleteFileCidHashes.length();
+    }
+
+    function getCanDeleteFileCidHashes(address nodeAddress) external view returns (bytes32[] memory) {
+        return nodes[nodeAddress].canDeleteFileCidHashes.values();
+    }
+
     function getCanDeleteFileNodeAddresses(string calldata cid) external view returns (address[] memory) {
-        return cid2canDeleteFileNodeAddresses[cid].values();
+        bytes32 cidHash = keccak256(bytes(cid));
+        return cidHash2canDeleteFileNodeAddresses[cidHash].values();
     }
 
     function nodeDeleteFile(address nodeAddress, string calldata cid) external returns (bool) {
-        files[nodeAddress][cid].isDeleted = true;
-        if (cid2nodeAddresses[cid].contains(nodeAddress)) {
-            cid2nodeAddresses[cid].remove(nodeAddress);
-        }
+        mustManager(managerName);
 
         bytes32 cidHash = keccak256(bytes(cid));
-        if (node2cidHashes[nodeAddress].contains(cidHash)) {
-            node2cidHashes[nodeAddress].remove(cidHash);
+        if (nodes[nodeAddress].cidHashes.contains(cidHash)) {
+            nodes[nodeAddress].cidHashes.remove(cidHash);
+        }
+
+        if (cidHash2nodeAddresses[cidHash].contains(nodeAddress)) {
+            cidHash2nodeAddresses[cidHash].remove(nodeAddress);
         }
 
         bool allNodeFinishDeleteFile = true;
-        for(uint i=0; i<cid2canDeleteFileNodeAddresses[cid].length(); i++) {
-            if (false == files[cid2canDeleteFileNodeAddresses[cid].at(i)][cid].isDeleted) {
+        address[] memory nodeAddresses = cidHash2canDeleteFileNodeAddresses[cidHash].values();
+        for(uint i=0; i<nodeAddresses.length; i++) {
+            if (nodes[nodeAddresses[i]].cidHashes.contains(cidHash)) {
                 allNodeFinishDeleteFile = false;
+                break;
             }
         }
 
@@ -232,15 +272,15 @@ contract NodeStorage is ExternalStorage, INodeStorage {
     }
 
     function getCidHashes(address nodeAddress) external view returns (bytes32[] memory) {
-        return node2cidHashes[nodeAddress].values();
+        return nodes[nodeAddress].cidHashes.values();
     }
 
     function getCidHashes(address nodeAddress, uint256 pageSize, uint256 pageNumber) external view returns (bytes32[] memory, bool) {
-        Paging.Page memory page = Paging.getPage(node2cidHashes[nodeAddress].length(), pageSize, pageNumber);
+        Paging.Page memory page = Paging.getPage(nodes[nodeAddress].cidHashes.length(), pageSize, pageNumber);
         uint256 start = page.pageNumber.sub(1).mul(page.pageSize);
         bytes32[] memory result = new bytes32[](page.pageRecords);
         for(uint256 i=0; i<page.pageRecords; i++) {
-            result[i] = node2cidHashes[nodeAddress].at(start+i);
+            result[i] = nodes[nodeAddress].cidHashes.at(start+i);
         }
         return (result, page.pageNumber == page.totalPages);
     }

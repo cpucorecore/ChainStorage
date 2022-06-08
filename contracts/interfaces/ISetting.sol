@@ -25,20 +25,11 @@ interface ISetting {
     function getMaxCidLength() external view returns (uint256);
     function setMaxCidLength(uint256 length) external;
 
-    function getTaskAcceptTimeout() external view returns (uint256);
-    function setTaskAcceptTimeout(uint256 value) external;
+    function getMaxCanAddFileCount() external view returns (uint256);
+    function setMaxCanAddFileCount(uint256 value) external;
 
-    function getAddFileTaskTimeout() external view returns (uint256);
-    function setAddFileTaskTimeout(uint256 value) external;
-
-    function getDeleteFileTaskTimeout() external view returns (uint256);
-    function setDeleteFileTaskTimeout(uint256 value) external;
-
-    function getAddFileProgressTimeout() external view returns (uint256);
-    function setAddFileProgressTimeout(uint256 value) external;
-
-    function getMaxAddFileFailedCount() external view returns (uint256);
-    function setMaxAddFileFailedCount(uint256 value) external;
+    function getMaxCanDeleteFileCount() external view returns (uint256);
+    function setMaxCanDeleteFileCount(uint256 value) external;
 
     event SettingChanged(bytes32 indexed name, bytes32 indexed field, uint256 previousValue, uint256 newValue);
 }

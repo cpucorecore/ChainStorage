@@ -5,6 +5,7 @@ import "./base/Importable.sol";
 import "./base/ExternalStorable.sol";
 import "./interfaces/INodeManager.sol";
 import "./interfaces/storages/INodeStorage.sol";
+import "./interfaces/ISetting.sol";
 import "./interfaces/IFileManager.sol";
 
 contract NodeManager is Importable, ExternalStorable, INodeManager {
@@ -18,6 +19,7 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
         setContractName(CONTRACT_NODE_MANAGER);
 
         imports = [
+        CONTRACT_SETTING,
         CONTRACT_FILE_MANAGER,
         CONTRACT_MONITOR,
         CONTRACT_CHAIN_STORAGE
@@ -26,6 +28,10 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
 
     function _Storage() private view returns (INodeStorage) {
         return INodeStorage(getStorage());
+    }
+
+    function _Setting() private view returns (ISetting) {
+        return ISetting(requireAddress(CONTRACT_SETTING));
     }
 
     function _FileManager() private view returns (IFileManager) {
@@ -68,7 +74,8 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
     function nodeCanAddFile(address nodeAddress, string calldata cid, uint256 size) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
 
-        // TODO check the node: do nodeCanAddFile but not do nodeAddFile, and tell the node by event
+        uint256 maxCanAddFile = _Setting().getMaxCanAddFileCount();
+        require(_Storage().getCanAddFileCount(nodeAddress) <= maxCanAddFile, "N:must finish addFile");
         uint256 count = _Storage().nodeCanAddFile(nodeAddress, cid, size);
         if (count == _FileManager().getReplica(cid)) {
         (bool sizeConsistent, uint256 size) = _Storage().isSizeConsistent(cid);
@@ -105,7 +112,9 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
     function nodeCanDeleteFile(address nodeAddress, string calldata cid) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
 
-        // TODO check the node: do nodeCanAddFile but not do nodeAddFile, and tell the node by event
+        uint256 maxCanDeleteFile = _Setting().getMaxCanDeleteFileCount();
+        require(_Storage().getCanDeleteFileCount(nodeAddress) <= maxCanDeleteFile, "N:must finish deleteFile");
+
         bool allNodeCanDeleteFile = _Storage().nodeCanDeleteFile(nodeAddress, cid);
         if (allNodeCanDeleteFile) {
             _FileManager().onBeginDeleteFile(cid);
