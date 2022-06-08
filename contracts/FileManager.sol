@@ -40,19 +40,15 @@ contract FileManager is Importable, ExternalStorable, IFileManager {
         waitCallback = false;
 
         uint256 status = _Storage().getStatus(cid);
-        require(DefaultStatus == status ||
-                FileAdded == status ||
-                FilePartialAdded == status, "F:wrong status");
+        require(DefaultStatus == status || FileAdded == status, "F:wrong status");
 
-        uint256 replica = _Setting().getReplica();
         if (DefaultStatus == status) {
-            _Storage().newFile(cid, replica);
-            _Storage().setStatus(cid, FileTryAdd);
-            _NodeManager().addFile(cid);
             waitCallback = true;
+            _Storage().newFile(cid, _Setting().getReplica());
+            _NodeManager().addFile(cid);
         }
 
-        if (!_Storage().userExist(cid, userAddress)) {
+        if (!_Storage().userExist(cid, userAddress)) { // TODO check remove this judgement?
             _Storage().addUser(cid, userAddress);
         }
     }
@@ -62,27 +58,31 @@ contract FileManager is Importable, ExternalStorable, IFileManager {
 
         uint256 status = _Storage().getStatus(cid);
         require(FileTryAdd == status, "F:wrong status");
-        _Storage().setStatus(cid, FileAdding);
+        require(size > 0, "F:size must>0");
+
         _Storage().setSize(cid, size);
+        _Storage().setStatus(cid, FileAdding);
     }
 
-    function onEndAddFile(string calldata cid, address[] calldata nodeAddresses) external {
+    function onNodeAddFile(address nodeAddress, string calldata cid) external {
         mustAddress(CONTRACT_NODE_MANAGER);
 
-        if (0 == nodeAddresses.length) { // should not be happen, TODO delete
-            _Storage().setStatus(cid, FileAddFailed);
-        } else if (_Storage().getReplica(cid) == nodeAddresses.length) {
-            _Storage().setStatus(cid, FileAdded);
-        } else { // should not be happen, TODO delete
-            _Storage().setStatus(cid, FilePartialAdded);
-        }
+        uint256 status = _Storage().getStatus(cid);
+        require(FileAdding == status || FilePartialAdded == status, "F:wrong status");
+        require(!_Storage().nodeExist(cid, nodeAddress), "F:node exist");
 
-        if (0 != nodeAddresses.length) {
-            _Storage().addNodes(cid, nodeAddresses);
-            _UserManager().onAddFileFinish(_Storage().getUsers(cid)[0], cid, _Storage().getSize(cid));
-        } else {
-            _UserManager().onAddFileFail(_Storage().getUsers(cid)[0], cid);
-        }
+        _Storage().addNode(cid, nodeAddress);
+        _Storage().setStatus(cid, FilePartialAdded);
+    }
+
+    function onEndAddFile(string calldata cid) external {
+        mustAddress(CONTRACT_NODE_MANAGER);
+
+        uint256 status = _Storage().getStatus(cid);
+        require(FilePartialAdded == status, "F:wrong status");
+
+        _Storage().setStatus(cid, FileAdded);
+        _UserManager().onAddFileFinish(_Storage().getUsers(cid), cid, _Storage().getSize(cid));
     }
 
     function deleteFile(string calldata cid, address userAddress) external returns (bool waitCallback) {
@@ -91,20 +91,14 @@ contract FileManager is Importable, ExternalStorable, IFileManager {
         waitCallback = false;
 
         uint256 status = _Storage().getStatus(cid);
-        require(FileAddFailed == status ||
-                FilePartialAdded == status ||
-                FileAdded == status, "F:wrong status");
+        require(FileAdded == status, "F:wrong status");
 
         _Storage().deleteUser(cid, userAddress);
         if (_Storage().userEmpty(cid)) {
-            if (FileAddFailed == status) {
-                _Storage().deleteFile(cid);
-            } else {
-                _Storage().setStatus(cid, FileTryDelete);
-                _Storage().setLastUser(cid, userAddress);
-                _NodeManager().deleteFile(cid);
-                waitCallback = true;
-            }
+            waitCallback = true;
+            _Storage().setStatus(cid, FileTryDelete);
+            _Storage().setLastUser(cid, userAddress);
+            _NodeManager().deleteFile(cid);
         }
 
         return waitCallback;
@@ -115,35 +109,34 @@ contract FileManager is Importable, ExternalStorable, IFileManager {
 
         uint256 status = _Storage().getStatus(cid);
         require(FileTryDelete == status, "F:wrong status");
+
         _Storage().setStatus(cid, FileDeleting);
     }
 
-    function onEndDeleteFile(string calldata cid, address[] calldata nodeAddresses) external {
+    function onNodeDeleteFile(address nodeAddress, string calldata cid) external {
         mustAddress(CONTRACT_NODE_MANAGER);
 
-        if (0 == nodeAddresses.length) { // should not be happen, TODO delete
-            _Storage().setStatus(cid, FileDeleteFailed);
-        } else if (_Storage().getNodes(cid).length == nodeAddresses.length) {
-            uint256 size = _Storage().getSize(cid);
-            _Storage().deleteNodes(cid, nodeAddresses); // must do before next line
-            _Storage().deleteFile(cid);
-            _UserManager().onDeleteFileFinish(_Storage().getLastUser(cid), cid, size);
-        } else { // should not be happen, TODO delete
-            _Storage().deleteNodes(cid, nodeAddresses);
-            _Storage().setStatus(cid, FilePartialAdded);
-        }
+        uint256 status = _Storage().getStatus(cid);
+        require(FileDeleting == status || FilePartialDeleted == status, "F:wrong status");
+        require(_Storage().nodeExist(cid, nodeAddress), "F:node not exist");
+
+        _Storage().deleteNode(cid, nodeAddress);
+        _Storage().setStatus(cid, FilePartialDeleted);
+    }
+
+    function onEndDeleteFile(string calldata cid) external {
+        mustAddress(CONTRACT_NODE_MANAGER);
+
+        uint256 status = _Storage().getStatus(cid);
+        require(FilePartialDeleted == status, "F:wrong status");
+
+        uint256 size = _Storage().getSize(cid);
+        _Storage().deleteFile(cid);
+        _UserManager().onDeleteFileFinish(_Storage().getLastUser(cid), cid, size);
     }
 
     function getSize(string calldata cid) external view returns (uint256) {
         return _Storage().getSize(cid);
-    }
-
-    function getNodes(string calldata cid) external view returns (address[] memory) {
-        return _Storage().getNodes(cid);
-    }
-
-    function getNodeNumber(string calldata cid) external view returns (uint256) {
-        return _Storage().getNodes(cid).length;
     }
 
     function getReplica(string calldata cid) external view returns (uint256) {

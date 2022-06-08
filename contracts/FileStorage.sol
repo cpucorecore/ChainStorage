@@ -11,6 +11,7 @@ contract FileStorage is ExternalStorage, IFileStorage {
 
     struct File {
         uint256 status;
+        uint256 statusTime;
         uint256 size;
         uint256 replica;
         EnumerableSet.AddressSet users;
@@ -25,16 +26,12 @@ contract FileStorage is ExternalStorage, IFileStorage {
 
     constructor(address _manager) public ExternalStorage(_manager) {}
 
-    function exist(string calldata cid) external view returns (bool) {
-        return (DefaultStatus != cid2file[cid].status);
-    }
-
     function newFile(string calldata cid, uint256 replica) external {
         mustManager(managerName);
 
         EnumerableSet.AddressSet memory users;
         EnumerableSet.AddressSet memory nodes;
-        cid2file[cid] = File(DefaultStatus, 0, replica, users, nodes);
+        cid2file[cid] = File(FileTryAdd, now, 0, replica, users, nodes);
 
         bytes32 cidHash = keccak256(bytes(cid));
         cidHash2cid[cidHash] = cid;
@@ -76,8 +73,13 @@ contract FileStorage is ExternalStorage, IFileStorage {
         return cid2file[cid].status;
     }
 
+    function getStatusTime(string calldata cid) external view returns (uint256) {
+        return cid2file[cid].statusTime;
+    }
+
     function setStatus(string calldata cid, uint256 status) external {
         cid2file[cid].status = status;
+        cid2file[cid].statusTime = now;
     }
 
     function userExist(string calldata cid, address userAddress) external view returns (bool) {
@@ -127,20 +129,14 @@ contract FileStorage is ExternalStorage, IFileStorage {
         return 0 == cid2file[cid].nodes.length();
     }
 
-    function addNodes(string calldata cid, address[] calldata nodeAddresses) external {
+    function addNode(string calldata cid, address nodeAddress) external {
         mustManager(managerName);
-
-        for(uint i=0; i<nodeAddresses.length; i++) {
-            cid2file[cid].nodes.add(nodeAddresses[i]);
-        }
+        cid2file[cid].nodes.add(nodeAddress);
     }
 
-    function deleteNodes(string calldata cid, address[] calldata nodeAddresses) external {
+    function deleteNode(string calldata cid, address nodeAddress) external {
         mustManager(managerName);
-
-        for(uint i=0; i<nodeAddresses.length; i++) {
-            cid2file[cid].nodes.remove(nodeAddresses[i]);
-        }
+        cid2file[cid].nodes.remove(nodeAddress);
     }
 
     function getNodes(string calldata cid) external view returns (address[] memory) {

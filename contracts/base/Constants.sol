@@ -46,12 +46,10 @@ contract Constants {
     // file status
     uint256 constant FileTryAdd = 1;
     uint256 constant FileAdding = 2;
-    uint256 constant FileAddFailed = 3;
-    uint256 constant FilePartialAdded = 4;
-    uint256 constant FileAdded = 5;
+    uint256 constant FilePartialAdded = 3;
+    uint256 constant FileAdded = 4;
 
-    uint256 constant FileTryDelete = 6;
-    uint256 constant FileDeleting = 7;
-    uint256 constant FileDeleteFailed = 8;
-    uint256 constant FilePartialDeleted = 9;
+    uint256 constant FileTryDelete = 5;
+    uint256 constant FileDeleting = 6;
+    uint256 constant FilePartialDeleted = 7;
 }

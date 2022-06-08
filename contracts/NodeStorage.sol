@@ -179,6 +179,10 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         return cid2canAddFileNodeAddresses[cid].contains(nodeAddress);
     }
 
+    function isFileAdded(address nodeAddress, string calldata cid) external view returns (bool) {
+        return cid2nodeAddresses[cid].contains(nodeAddress);
+    }
+
     function nodeAddFile(address nodeAddress, string calldata cid) external returns (bool) {
         node2cidState[nodeAddress][cid].isAddFileFinished = true;
         if (!cid2nodeAddresses[cid].contains(nodeAddress)) {

@@ -66,7 +66,7 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
         _nodeMustExist(nodeAddress);
         uint256 status = _Storage().getStatus(nodeAddress);
         require(NodeRegistered == status || NodeMaintain == status, "N:wrong status must[RM]");
-        (bytes32[] memory cidHashes, bool finish) = _Storage().getCidHashes(nodeAddress, 1, 50);
+        (bytes32[] memory cidHashes,) = _Storage().getCidHashes(nodeAddress, 1, 50);
         require(0 == cidHashes.length, "N:cid not empty");
         _Storage().deleteNode(nodeAddress);
 
@@ -123,11 +123,14 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
         mustAddress(CONTRACT_CHAIN_STORAGE);
 
         require(_Storage().isCanAddFile(nodeAddress, cid), "N:can't add file");
+        require(!_Storage().isFileAdded(nodeAddress, cid), "N:can't add file duplicated");
 
         _Storage().useStorage(nodeAddress, _FileManager().getSize(cid));
         bool allNodeFinishAddFile = _Storage().nodeAddFile(nodeAddress, cid);
+
+        _FileManager().onNodeAddFile(nodeAddress, cid);
         if (allNodeFinishAddFile) {
-            _FileManager().onEndAddFile(cid, _Storage().getNodeAddresses(cid));
+            _FileManager().onEndAddFile(cid);
         }
     }
 
@@ -152,10 +155,13 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
     function nodeDeleteFile(address nodeAddress, string calldata cid) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
 
+        require(_Storage().isFileAdded(nodeAddress, cid), "N:can't delete file not added");
+
         _Storage().freeStorage(nodeAddress, _FileManager().getSize(cid));
         bool allNodeFinishDeleteFile = _Storage().nodeDeleteFile(nodeAddress, cid);
+        _FileManager().onNodeDeleteFile(nodeAddress, cid);
         if (allNodeFinishDeleteFile) {
-            _FileManager().onEndDeleteFile(cid, _Storage().getCanDeleteFileNodeAddresses(cid));
+            _FileManager().onEndDeleteFile(cid);
         }
     }
 

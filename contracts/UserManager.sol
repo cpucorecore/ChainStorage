@@ -16,6 +16,7 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
 
     constructor(IResolver _resolver) public Importable(_resolver) {
         setContractName(CONTRACT_USER_MANAGER);
+
         imports = [
         CONTRACT_SETTING,
         CONTRACT_FILE_MANAGER,
@@ -37,27 +38,35 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
 
     function register(address userAddress, string calldata ext) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
+
         require(!_Storage().exist(userAddress), "U:user exist");
+
         _Storage().newUser(userAddress, _Setting().getInitSpace(), ext);
     }
 
     function setExt(address userAddress, string calldata ext) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
+
         require(_Storage().exist(userAddress), "U:user not exist");
+
         _Storage().setExt(userAddress, ext);
     }
 
     function setStorageTotal(address userAddress, uint256 size) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
+
         require(_Storage().exist(userAddress), "U:user not exist");
         require(size >= _Storage().getStorageUsed(userAddress), "U:storage space too small");
+
         _Storage().setStorageTotal(userAddress, size);
     }
 
     function deRegister(address userAddress) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
+
         require(_Storage().exist(userAddress), "U:user not exist");
         require(0 == _Storage().getFileNumber(userAddress), "U:files not empty");
+
         _Storage().deleteUser(userAddress);
     }
 
@@ -80,18 +89,13 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
         emit UserAction(userAddress, Add, cid);
     }
 
-    function onAddFileFinish(address userAddress, string calldata cid, uint256 size) external {
+    function onAddFileFinish(address[] calldata userAddresses, string calldata cid, uint256 size) external {
         mustAddress(CONTRACT_FILE_MANAGER);
 
-        _Storage().useStorage(userAddress, size, false);
-        emit AddFileFinished(userAddress, cid);
-    }
-
-    function onAddFileFail(address userAddress, string calldata cid) external {
-        mustAddress(CONTRACT_FILE_MANAGER);
-
-        _Storage().upInvalidAddFileCount(userAddress);
-        emit AddFileFailed(userAddress, cid);
+        for(uint i=0; i<userAddresses.length; i++) {
+            _Storage().useStorage(userAddresses[i], size, false);
+            emit AddFileFinished(userAddresses[i], cid);
+        }
     }
 
     function deleteFile(address userAddress, string calldata cid) external {
@@ -100,11 +104,11 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
         require(_Storage().exist(userAddress), "U:user not exist");
         require(_Storage().fileExist(userAddress, cid), "U:file not exist");
 
-        uint256 size = _FileManager().getSize(cid);
         bool waitCallback = _FileManager().deleteFile(cid, userAddress);
         emit UserAction(userAddress, Delete, cid);
         if (!waitCallback) {
-            _Storage().freeStorage(userAddress, size);
+            _Storage().deleteFile(userAddress, cid);
+            _Storage().freeStorage(userAddress, _FileManager().getSize(cid));
             emit DeleteFileFinished(userAddress, cid);
         }
     }
@@ -120,15 +124,19 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
 
     function setFileExt(address userAddress, string calldata cid, string calldata ext) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
+
         require(_Storage().exist(userAddress), "U:user not exist");
-        require(_Storage().fileExist(userAddress, cid), "U:no file");
+        require(_Storage().fileExist(userAddress, cid), "U:file not exist");
+
         _Storage().setFileExt(userAddress, cid, ext);
     }
 
     function setFileDuration(address userAddress, string calldata cid, uint256 duration) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
+
         require(_Storage().exist(userAddress), "U:user not exist");
         require(_Storage().fileExist(userAddress, cid), "U:file not exist");
+
         _Storage().setFileDuration(userAddress, cid, duration);
     }
 }
