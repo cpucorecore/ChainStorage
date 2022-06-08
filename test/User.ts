@@ -25,7 +25,7 @@ describe("User", function () {
   let userAddress: string;
 
   before(async () => {
-    await prepareContext(0, 2, 2, 0, 0, 2);
+    await prepareContext(0, 1, 0, 0, 1);
     user = accounts[10];
     userAddress = await user.getAddress();
   });
@@ -193,43 +193,43 @@ describe("User", function () {
     const user3 = accounts[2];
     const user4 = accounts[3];
 
-    expect(await userStorage.getTotalUserNumber()).to.equal(0);
+    expect(await userStorage.getUserCount()).to.equal(0);
 
     await chainStorage.connect(user1).userRegister(UserExt);
-    expect(await userStorage.getTotalUserNumber()).to.equal(1);
+    expect(await userStorage.getUserCount()).to.equal(1);
 
     await chainStorage.connect(user1).userDeRegister();
-    expect(await userStorage.getTotalUserNumber()).to.equal(0);
+    expect(await userStorage.getUserCount()).to.equal(0);
 
     await chainStorage.connect(user1).userRegister(UserExt);
-    expect(await userStorage.getTotalUserNumber()).to.equal(1);
+    expect(await userStorage.getUserCount()).to.equal(1);
 
     await chainStorage.connect(user2).userRegister(UserExt);
-    expect(await userStorage.getTotalUserNumber()).to.equal(2);
+    expect(await userStorage.getUserCount()).to.equal(2);
 
     await chainStorage.connect(user3).userRegister(UserExt);
-    expect(await userStorage.getTotalUserNumber()).to.equal(3);
+    expect(await userStorage.getUserCount()).to.equal(3);
 
     await chainStorage.connect(user1).userDeRegister();
-    expect(await userStorage.getTotalUserNumber()).to.equal(2);
+    expect(await userStorage.getUserCount()).to.equal(2);
 
     await chainStorage.connect(user2).userDeRegister();
-    expect(await userStorage.getTotalUserNumber()).to.equal(1);
+    expect(await userStorage.getUserCount()).to.equal(1);
 
     await chainStorage.connect(user2).userRegister(UserExt);
-    expect(await userStorage.getTotalUserNumber()).to.equal(2);
+    expect(await userStorage.getUserCount()).to.equal(2);
 
     await chainStorage.connect(user1).userRegister(UserExt);
-    expect(await userStorage.getTotalUserNumber()).to.equal(3);
+    expect(await userStorage.getUserCount()).to.equal(3);
 
     await chainStorage.connect(user4).userRegister(UserExt);
-    expect(await userStorage.getTotalUserNumber()).to.equal(4);
+    expect(await userStorage.getUserCount()).to.equal(4);
 
     await chainStorage.connect(user2).userDeRegister();
-    expect(await userStorage.getTotalUserNumber()).to.equal(3);
+    expect(await userStorage.getUserCount()).to.equal(3);
 
     await chainStorage.connect(user3).userDeRegister();
-    expect(await userStorage.getTotalUserNumber()).to.equal(2);
+    expect(await userStorage.getUserCount()).to.equal(2);
   });
 
   it("user storage space", async function () {
@@ -250,9 +250,7 @@ describe("User", function () {
 
     await chainStorage.connect(user).userAddFile(cid1, Duration, FileExt);
     await chainStorage.connect(nodes[0]).nodeCanAddFile(cid1, cid1size);
-    await chainStorage.connect(nodes[1]).nodeCanAddFile(cid1, cid1size);
     await chainStorage.connect(nodes[0]).nodeAddFile(cid1);
-    await chainStorage.connect(nodes[1]).nodeAddFile(cid1);
     expect(await userStorage.getStorageUsed(userAddress)).to.equal(cid1size);
     expect(await userStorage.getStorageTotal(userAddress)).to.equal(
       UserStorageTotal
@@ -260,9 +258,7 @@ describe("User", function () {
 
     await chainStorage.connect(user).userAddFile(cid2, Duration, FileExt);
     await chainStorage.connect(nodes[0]).nodeCanAddFile(cid2, cid2size);
-    await chainStorage.connect(nodes[1]).nodeCanAddFile(cid2, cid2size);
     await chainStorage.connect(nodes[0]).nodeAddFile(cid2);
-    await chainStorage.connect(nodes[1]).nodeAddFile(cid2);
     expect(await userStorage.getStorageUsed(userAddress)).to.equal(
       cid1size + cid2size
     );
@@ -272,9 +268,7 @@ describe("User", function () {
 
     await chainStorage.connect(user).userDeleteFile(cid1);
     await chainStorage.connect(nodes[0]).nodeCanDeleteFile(cid1);
-    await chainStorage.connect(nodes[1]).nodeCanDeleteFile(cid1);
     await chainStorage.connect(nodes[0]).nodeDeleteFile(cid1);
-    await chainStorage.connect(nodes[1]).nodeDeleteFile(cid1);
     expect(await userStorage.getStorageUsed(userAddress)).to.equal(cid2size);
     expect(await userStorage.getStorageTotal(userAddress)).to.equal(
       UserStorageTotal
@@ -282,9 +276,7 @@ describe("User", function () {
 
     await chainStorage.connect(user).userDeleteFile(cid2);
     await chainStorage.connect(nodes[0]).nodeCanDeleteFile(cid2);
-    await chainStorage.connect(nodes[1]).nodeCanDeleteFile(cid2);
     await chainStorage.connect(nodes[0]).nodeDeleteFile(cid2);
-    await chainStorage.connect(nodes[1]).nodeDeleteFile(cid2);
     expect(await userStorage.getStorageUsed(userAddress)).to.equal(0);
     expect(await userStorage.getStorageTotal(userAddress)).to.equal(
       UserStorageTotal
@@ -297,11 +289,7 @@ describe("User", function () {
     await chainStorage
       .connect(nodes[0])
       .nodeCanAddFile(Cids[3], UserStorageTotal * 2);
-    await chainStorage
-      .connect(nodes[1])
-      .nodeCanAddFile(Cids[3], UserStorageTotal * 2);
     await chainStorage.connect(nodes[0]).nodeAddFile(Cids[3]);
-    await chainStorage.connect(nodes[1]).nodeAddFile(Cids[3]);
     expect(await userStorage.getStorageUsed(userAddress)).to.equal(
       UserStorageTotal * 2
     );
@@ -314,11 +302,7 @@ describe("User", function () {
     await chainStorage
       .connect(nodes[0])
       .nodeCanAddFile(Cids[3], UserStorageTotal * 2);
-    await chainStorage
-      .connect(nodes[1])
-      .nodeCanAddFile(Cids[3], UserStorageTotal * 2);
     await chainStorage.connect(nodes[0]).nodeAddFile(Cids[3]);
-    await chainStorage.connect(nodes[1]).nodeAddFile(Cids[3]);
 
     expect(await userStorage.getStorageUsed(userAddress)).to.equal(
       UserStorageTotal * 2

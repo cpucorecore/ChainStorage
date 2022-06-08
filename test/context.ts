@@ -8,10 +8,7 @@ import {
   ChainStorage,
   FileStorage,
   MonitorStorage,
-  NodeSelectorForTest,
   NodeStorage,
-  TaskManager,
-  TaskStorage,
   UserManager,
   UserStorage,
   // eslint-disable-next-line node/no-missing-import
@@ -36,13 +33,8 @@ export const Cids = [
   "QmeN6JUjRSZJgdQFjFMX9PHwAFueWbRecLKBZgcqYLboir", // hash: 0x5ef8d464eb9a1baaf9c52ccfef2262fda94bd65cc559526f90e9ea37e73b2068
 ];
 
-export const TaskAcceptTimeout = 3600;
-export const AddFileTaskTimeout = 3600 * 24;
-export const DeleteFileTaskTimeout = 60 * 10;
-export const AddFileProgressTimeout = 60 * 10;
-export const MaxAddFileFailedCount = 3;
-
-export let nodeSelectorForTest: NodeSelectorForTest;
+export const MaxCanAddFileCount = 5;
+export const MaxCanDeleteFileCount = 5;
 
 export let setting: Setting;
 export let chainStorage: ChainStorage;
@@ -51,8 +43,6 @@ export let fileStorage: FileStorage;
 export let monitorStorage: MonitorStorage;
 export let userManager: UserManager;
 export let userStorage: UserStorage;
-export let taskManager: TaskManager;
-export let taskStorage: TaskStorage;
 
 export const users: Signer[] = [];
 export const nodes: Signer[] = [];
@@ -73,7 +63,6 @@ function string2bytes32(value: string) {
 export async function prepareContext(
   userNumber: any,
   nodeNumber: any,
-  onlineNodeNumber: any,
   monitorNumber: any,
   onlineMonitorNumber: any,
   replica: any
@@ -137,28 +126,12 @@ export async function prepareContext(
   await nodeStorage.deployed();
   // nodeManager setStorage
   await nodeManager.setStorage(nodeStorage.address);
-  // deploy Task
-  const TaskManager = await ethers.getContractFactory("TaskManager");
-  taskManager = await TaskManager.deploy(resolver.address);
-  await taskManager.deployed();
-  // deploy TaskStorage
-  const TaskStorage = await ethers.getContractFactory("TaskStorage");
-  taskStorage = await TaskStorage.deploy(taskManager.address);
-  await taskStorage.deployed();
-  // task setStorage
-  await taskManager.setStorage(taskStorage.address);
   // deploy ChainStorage
   const ChainStorage = await ethers.getContractFactory("ChainStorage");
   chainStorage = await ChainStorage.deploy();
   await chainStorage.deployed();
   // chainStorage initialize
   await chainStorage.initialize(resolver.address);
-  // deploy NodeSelectorForTest
-  const NodeSelectorForTest = await ethers.getContractFactory(
-    "NodeSelectorForTest"
-  );
-  nodeSelectorForTest = await NodeSelectorForTest.deploy();
-  await nodeSelectorForTest.deployed();
   // resolver set addresses
   deployer = accounts[0];
   deployerAddress = await deployer.getAddress();
@@ -168,7 +141,6 @@ export async function prepareContext(
   await resolver.setAddress(string2bytes32("Monitor"), monitor.address);
   await resolver.setAddress(string2bytes32("UserManager"), userManager.address);
   await resolver.setAddress(string2bytes32("NodeManager"), nodeManager.address);
-  await resolver.setAddress(string2bytes32("TaskManager"), taskManager.address);
   await resolver.setAddress(
     string2bytes32("ChainStorage"),
     chainStorage.address
@@ -177,7 +149,6 @@ export async function prepareContext(
   await fileManager.refreshCache();
   await userManager.refreshCache();
   await nodeManager.refreshCache();
-  await taskManager.refreshCache();
   await monitor.refreshCache();
   await chainStorage.refreshCache();
 
@@ -190,11 +161,8 @@ export async function prepareContext(
   await setting.setInitSpace(UserStorageTotal);
   await setting.setMaxCidLength(MaxLength);
   await setting.setAdmin(deployerAddress);
-  await setting.setTaskAcceptTimeout(TaskAcceptTimeout);
-  await setting.setAddFileTaskTimeout(AddFileTaskTimeout);
-  await setting.setDeleteFileTaskTimeout(DeleteFileTaskTimeout);
-  await setting.setAddFileProgressTimeout(AddFileProgressTimeout);
-  await setting.setMaxAddFileFailedCount(MaxAddFileFailedCount);
+  await setting.setMaxCanAddFileCount(MaxCanAddFileCount);
+  await setting.setMaxCanDeleteFileCount(MaxCanDeleteFileCount);
 
   let address;
   // create users
@@ -215,14 +183,6 @@ export async function prepareContext(
       .connect(accounts[i])
       .nodeRegister(NodeStorageTotal, NodeExt);
   }
-  // nodeManager online
-  for (
-    let i = accountNumber - 1;
-    i > accountNumber - 1 - onlineNodeNumber;
-    i--
-  ) {
-    await chainStorage.connect(accounts[i]).nodeOnline();
-  }
 
   // create monitors
   for (let i = 0; i < monitorNumber; i++) {
@@ -230,10 +190,6 @@ export async function prepareContext(
     address = await accounts[i].getAddress();
     monitorAddresses.push(address);
     await chainStorage.connect(accounts[i]).monitorRegister(MonitorExt);
-  }
-  // monitor online
-  for (let i = 0; i < onlineMonitorNumber; i++) {
-    await chainStorage.connect(accounts[i]).monitorOnline();
   }
 }
 
@@ -258,7 +214,6 @@ export async function registerMoreNodesAndOnline(nodeNumber: any) {
     nodes.push(node);
     nodeAddresses.push(nodeAddress);
     await chainStorage.connect(node).nodeRegister(NodeStorageTotal, NodeExt);
-    await chainStorage.connect(node).nodeOnline();
   }
 }
 
@@ -282,70 +237,6 @@ export async function takeSnapshot() {
 
 export async function revertToSnapshot() {
   await ethers.provider.send("evm_revert", [snapshotId]);
-}
-
-export async function dumpTask(from: any, to: any) {
-  console.log("================task[" + from + ", " + to + "]================");
-
-  console.log("\tuser, action, node, noCallback, cid");
-
-  let task;
-  for (let i = from; i <= to; i++) {
-    task = await taskStorage.getTask(i);
-    console.log(
-      "task[" +
-        i +
-        "]:(" +
-        task[0] +
-        ", " +
-        task[1] +
-        ", " +
-        task[2] +
-        ", " +
-        task[3] +
-        ", " +
-        task[4] +
-        ")"
-    );
-  }
-  console.log("\n");
-}
-
-export async function dumpTaskState(from: any, to: any) {
-  console.log(
-    "================taskState[" + from + ", " + to + "]================"
-  );
-
-  console.log(
-    "\tstatus, createBlockNumber, createTime, acceptTime, acceptTimeoutTime, finishTime, failTime, timeoutTime"
-  );
-
-  let taskState;
-  for (let i = from; i <= to; i++) {
-    taskState = await taskStorage.getTaskState(i);
-    console.log(
-      "taskState[" +
-        i +
-        "]:(" +
-        taskState[0] +
-        ", " +
-        taskState[1] +
-        ", " +
-        taskState[2] +
-        ", " +
-        taskState[3] +
-        ", " +
-        taskState[4] +
-        ", " +
-        taskState[5] +
-        ", " +
-        taskState[6] +
-        ", " +
-        taskState[7] +
-        ")"
-    );
-  }
-  console.log("\n");
 }
 
 export async function dumpFile(cid: string) {
