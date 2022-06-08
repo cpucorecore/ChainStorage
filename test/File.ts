@@ -12,7 +12,6 @@ import {
   takeSnapshot,
   revertToSnapshot,
   userAddresses,
-  taskStorage,
   nodeAddresses,
   Cids,
   // eslint-disable-next-line node/no-missing-import
@@ -20,7 +19,7 @@ import {
 
 describe("File", function () {
   before(async () => {
-    await prepareContext(2, 2, 2, 0, 0, 2);
+    await prepareContext(2, 2, 0, 0, 2);
   });
 
   beforeEach(async function () {

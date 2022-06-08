@@ -1,6 +1,7 @@
 pragma solidity ^0.5.2;
 
 contract IFileStorage {
+    function exist(string calldata cid) external view returns (bool);
     function newFile(string calldata cid, uint256 replica) external;
     function deleteFile(string calldata cid) external;
 

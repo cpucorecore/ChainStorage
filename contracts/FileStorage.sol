@@ -26,6 +26,10 @@ contract FileStorage is ExternalStorage, IFileStorage {
 
     constructor(address _manager) public ExternalStorage(_manager) {}
 
+    function exist(string calldata cid) external view returns (bool) {
+        return DefaultStatus != cid2file[cid].status;
+    }
+
     function newFile(string calldata cid, uint256 replica) external {
         mustManager(managerName);
 
