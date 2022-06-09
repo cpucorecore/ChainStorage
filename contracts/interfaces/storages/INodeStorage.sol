@@ -9,10 +9,11 @@ interface INodeStorage {
     function getExt(address nodeAddress) external view returns (string memory);
 
     function setStorageTotal(address nodeAddress, uint256 value) external;
+    function getStorageTotal(address nodeAddress) external view returns (uint256);
+
     function useStorage(address nodeAddress, uint256 value) external;
     function freeStorage(address nodeAddress, uint256 value) external;
     function availableSpace(address nodeAddress) external view returns (uint256);
-    function getStorageTotal(address nodeAddress) external view returns (uint256);
     function getStorageUsed(address nodeAddress) external view returns (uint256);
 
     function getNodeCount() external view returns (uint256);

@@ -62,6 +62,10 @@ contract UserStorage is ExternalStorage, IUserStorage {
         users[userAddress].storageSpace.total = size;
     }
 
+    function getStorageTotal(address userAddress) external view returns (uint256) {
+        return users[userAddress].storageSpace.total;
+    }
+
     function useStorage(address userAddress, uint256 size, bool checkSpaceEnough) external {
         mustManager(managerName);
         users[userAddress].storageSpace.useSpace(size, checkSpaceEnough);
@@ -74,10 +78,6 @@ contract UserStorage is ExternalStorage, IUserStorage {
 
     function availableSpace(address userAddress) external view returns (uint256) {
         return users[userAddress].storageSpace.availableSpace();
-    }
-
-    function getStorageTotal(address userAddress) external view returns (uint256) {
-        return users[userAddress].storageSpace.total;
     }
 
     function getStorageUsed(address userAddress) external view returns (uint256) {

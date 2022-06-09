@@ -69,6 +69,10 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         nodes[nodeAddress].storageSpace.total = value;
     }
 
+    function getStorageTotal(address nodeAddress) external view returns (uint256) {
+        return nodes[nodeAddress].storageSpace.total;
+    }
+
     function useStorage(address nodeAddress, uint256 size) external {
         nodes[nodeAddress].storageSpace.useSpace(size, true);
     }
@@ -79,10 +83,6 @@ contract NodeStorage is ExternalStorage, INodeStorage {
 
     function availableSpace(address nodeAddress) external view returns (uint256) {
         return nodes[nodeAddress].storageSpace.availableSpace();
-    }
-
-    function getStorageTotal(address nodeAddress) external view returns (uint256) {
-        return nodes[nodeAddress].storageSpace.total;
     }
 
     function getStorageUsed(address nodeAddress) external view returns (uint256) {

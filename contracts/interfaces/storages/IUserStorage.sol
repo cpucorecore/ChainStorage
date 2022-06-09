@@ -10,10 +10,11 @@ interface IUserStorage {
     function getExt(address userAddress) external view returns (string memory);
 
     function setStorageTotal(address userAddress, uint256 size) external;
+    function getStorageTotal(address userAddress) external view returns (uint256);
+
     function useStorage(address userAddress, uint256 size, bool checkSpaceEnough) external;
     function freeStorage(address userAddress, uint256 size) external;
     function availableSpace(address userAddress) external view returns (uint256);
-    function getStorageTotal(address userAddress) external view returns (uint256);
     function getStorageUsed(address userAddress) external view returns (uint256);
 
     function getUserCount() external view returns (uint256);
