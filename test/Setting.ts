@@ -10,17 +10,14 @@ import {
   userAddresses,
   deployerAddress,
   MaxLength,
-  TaskAcceptTimeout,
-  AddFileTaskTimeout,
-  DeleteFileTaskTimeout,
-  AddFileProgressTimeout,
-  MaxAddFileFailedCount,
+  MaxCanAddFileCount,
+  MaxCanDeleteFileCount,
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
 
 describe("Setting", function () {
   before(async () => {
-    await prepareContext(10, 2, 2, 0, 0, 2);
+    await prepareContext(10, 2, 2);
   });
 
   beforeEach(async function () {
@@ -61,26 +58,6 @@ describe("Setting", function () {
     await expect(setting.connect(users[8]).setMaxCidLength(4)).to.revertedWith(
       revertMsg
     );
-
-    await expect(
-      setting.connect(users[8]).setTaskAcceptTimeout(4)
-    ).to.revertedWith(revertMsg);
-
-    await expect(
-      setting.connect(users[8]).setAddFileTaskTimeout(4)
-    ).to.revertedWith(revertMsg);
-
-    await expect(
-      setting.connect(users[8]).setDeleteFileTaskTimeout(4)
-    ).to.revertedWith(revertMsg);
-
-    await expect(
-      setting.connect(users[8]).setAddFileProgressTimeout(4)
-    ).to.revertedWith(revertMsg);
-
-    await expect(
-      setting.connect(users[8]).setMaxAddFileFailedCount(4)
-    ).to.revertedWith(revertMsg);
   });
 
   it("replica get/set test", async function () {
@@ -139,44 +116,19 @@ describe("Setting", function () {
     expect(await setting.getMaxCidLength()).to.equal(newValue);
   });
 
-  it("taskAcceptTimeout get/set test", async function () {
-    const newValue = TaskAcceptTimeout * 2;
-    expect(await setting.getTaskAcceptTimeout()).to.equal(TaskAcceptTimeout);
-    await setting.connect(deployer).setTaskAcceptTimeout(newValue);
-    expect(await setting.getTaskAcceptTimeout()).to.equal(newValue);
+  it("MaxCanAddFileCount get/set test", async function () {
+    const newValue = MaxCanAddFileCount * 2;
+    expect(await setting.getMaxCanAddFileCount()).to.equal(MaxCanAddFileCount);
+    await setting.connect(deployer).setMaxCanAddFileCount(newValue);
+    expect(await setting.getMaxCanAddFileCount()).to.equal(newValue);
   });
 
-  it("addFileTaskTimeout get/set test", async function () {
-    const newValue = AddFileTaskTimeout * 2;
-    expect(await setting.getAddFileTaskTimeout()).to.equal(AddFileTaskTimeout);
-    await setting.connect(deployer).setAddFileTaskTimeout(newValue);
-    expect(await setting.getAddFileTaskTimeout()).to.equal(newValue);
-  });
-
-  it("deleteFileTaskTimeout get/set test", async function () {
-    const newValue = DeleteFileTaskTimeout * 2;
-    expect(await setting.getDeleteFileTaskTimeout()).to.equal(
-      DeleteFileTaskTimeout
+  it("MaxCanDeleteFileCount get/set test", async function () {
+    const newValue = MaxCanDeleteFileCount * 2;
+    expect(await setting.getMaxCanDeleteFileCount()).to.equal(
+      MaxCanDeleteFileCount
     );
-    await setting.connect(deployer).setDeleteFileTaskTimeout(newValue);
-    expect(await setting.getDeleteFileTaskTimeout()).to.equal(newValue);
-  });
-
-  it("addFileProgressTimeout get/set test", async function () {
-    const newValue = AddFileProgressTimeout * 2;
-    expect(await setting.getAddFileProgressTimeout()).to.equal(
-      AddFileProgressTimeout
-    );
-    await setting.connect(deployer).setAddFileProgressTimeout(newValue);
-    expect(await setting.getAddFileProgressTimeout()).to.equal(newValue);
-  });
-
-  it("maxAddFileFailedCount get/set test", async function () {
-    const newValue = MaxAddFileFailedCount * 2;
-    expect(await setting.getMaxAddFileFailedCount()).to.equal(
-      MaxAddFileFailedCount
-    );
-    await setting.connect(deployer).setMaxAddFileFailedCount(newValue);
-    expect(await setting.getMaxAddFileFailedCount()).to.equal(newValue);
+    await setting.connect(deployer).setMaxCanDeleteFileCount(newValue);
+    expect(await setting.getMaxCanDeleteFileCount()).to.equal(newValue);
   });
 });

@@ -189,6 +189,10 @@ contract NodeStorage is ExternalStorage, INodeStorage {
             nodes[nodeAddress].cidHashes.add(cidHash);
         }
 
+        if (cidHash2canAddFileNodeAddresses[cidHash].contains(nodeAddress)) {
+            cidHash2canAddFileNodeAddresses[cidHash].remove(nodeAddress);
+        }
+
         if (!cidHash2nodeAddresses[cidHash].contains(nodeAddress)) {
             cidHash2nodeAddresses[cidHash].add(nodeAddress);
         }

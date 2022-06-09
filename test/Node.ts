@@ -1,10 +1,9 @@
-import { assert, expect } from "chai";
+import { expect } from "chai";
 import {
   chainStorage,
   prepareContext,
   takeSnapshot,
   revertToSnapshot,
-  accounts,
   NodeStorageTotal,
   NodeExt,
   nodeStorage,
@@ -13,21 +12,17 @@ import {
   FileExt,
   Cid,
   FileSize,
-  Cids,
-  increaseTime,
   registerMoreNodesAndOnline,
-  monitors,
   revertNodes,
   nodeAddresses,
   nodes,
   accountAddresses,
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
-import { Signer } from "ethers";
 
 describe("Node", function () {
   before(async () => {
-    await prepareContext(2, 0, 1, 1, 1);
+    await prepareContext(2, 1, 1);
   });
 
   beforeEach(async function () {

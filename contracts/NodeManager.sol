@@ -78,7 +78,7 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
         require(_Storage().getCanAddFileCount(nodeAddress) <= maxCanAddFile, "N:must finish addFile");
         uint256 count = _Storage().nodeCanAddFile(nodeAddress, cid, size);
         if (count == _FileManager().getReplica(cid)) {
-        (bool sizeConsistent, uint256 size) = _Storage().isSizeConsistent(cid);
+            (bool sizeConsistent, uint256 size) = _Storage().isSizeConsistent(cid);
             if (sizeConsistent) {
                 _FileManager().onBeginAddFile(cid, size);
                 address[] memory nodeAddresses = _Storage().getCanAddFileNodeAddresses(cid);

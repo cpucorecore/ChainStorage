@@ -25,7 +25,7 @@ describe("User", function () {
   let userAddress: string;
 
   before(async () => {
-    await prepareContext(0, 1, 0, 0, 1);
+    await prepareContext(0, 1, 1);
     user = accounts[10];
     userAddress = await user.getAddress();
   });

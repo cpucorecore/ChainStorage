@@ -7,7 +7,6 @@ import {
   Setting,
   ChainStorage,
   FileStorage,
-  MonitorStorage,
   NodeStorage,
   UserManager,
   UserStorage,
@@ -21,7 +20,6 @@ export let Replica: any = 2;
 export const Duration = 3600;
 export const NodeExt = "nodeExt";
 export const UserExt = "userExt";
-export const MonitorExt = "monitorExt";
 export const FileExt = "fileExt";
 export const FileSize = 1111;
 export const Cid = "QmeN6JUjRSZJgdQFjFMX9PHwAFueWbRecLKBZgcqYLboir";
@@ -40,17 +38,14 @@ export let setting: Setting;
 export let chainStorage: ChainStorage;
 export let nodeStorage: NodeStorage;
 export let fileStorage: FileStorage;
-export let monitorStorage: MonitorStorage;
 export let userManager: UserManager;
 export let userStorage: UserStorage;
 
 export const users: Signer[] = [];
 export const nodes: Signer[] = [];
-export const monitors: Signer[] = [];
 
 export const userAddresses: string[] = [];
 export const nodeAddresses: string[] = [];
-export const monitorAddresses: string[] = [];
 export let accounts: Signer[] = [];
 export const accountAddresses: string[] = [];
 export let deployer: Signer;
@@ -63,8 +58,6 @@ function string2bytes32(value: string) {
 export async function prepareContext(
   userNumber: any,
   nodeNumber: any,
-  monitorNumber: any,
-  onlineMonitorNumber: any,
   replica: any
 ) {
   Replica = replica;
@@ -96,16 +89,6 @@ export async function prepareContext(
   await fileStorage.deployed();
   // fileManager setStorage
   await fileManager.setStorage(fileStorage.address);
-  // deploy Monitor
-  const Monitor = await ethers.getContractFactory("Monitor");
-  const monitor = await Monitor.deploy(resolver.address);
-  await monitor.deployed();
-  // deploy MonitorStorage
-  const MonitorStorage = await ethers.getContractFactory("MonitorStorage");
-  monitorStorage = await MonitorStorage.deploy(monitor.address);
-  await monitorStorage.deployed();
-  // monitor setStorage
-  await monitor.setStorage(monitorStorage.address);
   // deploy User
   const UserManager = await ethers.getContractFactory("UserManager");
   userManager = await UserManager.deploy(resolver.address);
@@ -138,7 +121,6 @@ export async function prepareContext(
   await resolver.setAddress(string2bytes32("Admin"), deployerAddress);
   await resolver.setAddress(string2bytes32("Setting"), setting.address);
   await resolver.setAddress(string2bytes32("FileManager"), fileManager.address);
-  await resolver.setAddress(string2bytes32("Monitor"), monitor.address);
   await resolver.setAddress(string2bytes32("UserManager"), userManager.address);
   await resolver.setAddress(string2bytes32("NodeManager"), nodeManager.address);
   await resolver.setAddress(
@@ -149,7 +131,6 @@ export async function prepareContext(
   await fileManager.refreshCache();
   await userManager.refreshCache();
   await nodeManager.refreshCache();
-  await monitor.refreshCache();
   await chainStorage.refreshCache();
 
   // setup setting
@@ -182,14 +163,6 @@ export async function prepareContext(
     await chainStorage
       .connect(accounts[i])
       .nodeRegister(NodeStorageTotal, NodeExt);
-  }
-
-  // create monitors
-  for (let i = 0; i < monitorNumber; i++) {
-    monitors.push(accounts[i]);
-    address = await accounts[i].getAddress();
-    monitorAddresses.push(address);
-    await chainStorage.connect(accounts[i]).monitorRegister(MonitorExt);
   }
 }
 
@@ -240,12 +213,21 @@ export async function revertToSnapshot() {
 }
 
 export async function dumpFile(cid: string) {
-  console.log("fileNumber: " + (await fileStorage.getFileNumber()));
+  console.log("fileCount: " + (await fileStorage.getFileCount()));
   console.log("totalFileSize: " + (await fileStorage.getTotalSize()));
+  console.log("status: " + (await fileStorage.getStatus(cid)));
+  console.log("replica: " + (await fileStorage.getReplica(cid)));
   console.log(
     "cid[" + cid + "] users: " + (await fileStorage["getUsers(string)"](cid))
   );
   console.log(
     "cid[" + cid + "] nodes: " + (await fileStorage["getNodes(string)"](cid))
+  );
+}
+
+export async function dumpNode(cid: string) {
+  console.log(
+    "canAddFileNodeAddresses: ",
+    await nodeStorage.getCanAddFileNodeAddresses(cid)
   );
 }

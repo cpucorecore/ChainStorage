@@ -168,7 +168,7 @@ contract FileStorage is ExternalStorage, IFileStorage {
         return totalSize;
     }
 
-    function getFileNumber() external view returns (uint256) {
+    function getFileCount() external view returns (uint256) {
         return cidHashes.length();
     }
 

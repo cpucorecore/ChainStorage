@@ -19,7 +19,7 @@ import {
 
 describe("File", function () {
   before(async () => {
-    await prepareContext(2, 2, 0, 0, 2);
+    await prepareContext(2, 2, 2);
   });
 
   beforeEach(async function () {
@@ -155,12 +155,12 @@ describe("File", function () {
   });
 
   it("totalFileNumber should be 0 before add file", async function () {
-    expect(await fileStorage.getFileNumber()).to.equal(0);
+    expect(await fileStorage.getFileCount()).to.equal(0);
   });
 
   it("totalFileNumber should be > 0 after add file", async function () {
     await chainStorage.connect(users[0]).userAddFile(Cid, Duration, FileExt);
-    expect(await fileStorage.getFileNumber()).to.equal(1);
+    expect(await fileStorage.getFileCount()).to.equal(1);
   });
 
   it("totalFileNumber should be > 0 after add file then delete this file", async function () {
@@ -178,7 +178,7 @@ describe("File", function () {
     await chainStorage.connect(nodes[0]).nodeDeleteFile(Cid);
     await chainStorage.connect(nodes[1]).nodeDeleteFile(Cid);
 
-    expect(await fileStorage.getFileNumber()).to.equal(0);
+    expect(await fileStorage.getFileCount()).to.equal(0);
   });
 
   it("totalSize should be 0 before add file", async function () {

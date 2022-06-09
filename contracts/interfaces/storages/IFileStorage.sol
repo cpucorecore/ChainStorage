@@ -29,7 +29,7 @@ contract IFileStorage {
     function getNodes(string calldata cid, uint256 pageSize, uint256 pageNumber) external view returns (address[] memory, bool);
 
     function getTotalSize() external view returns (uint256);
-    function getFileNumber() external view returns (uint256);
+    function getFileCount() external view returns (uint256);
 
     function getCid(bytes32 cidHash) external view returns (string memory);
 
