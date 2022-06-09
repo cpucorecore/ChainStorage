@@ -15,6 +15,8 @@ import {
 
 export const NodeStorageTotal = 1024 * 1024 * 1024 * 100;
 export const UserStorageTotal = 1024 * 1024 * 1024 * 5;
+export const MaxCanAddFileCount = 5;
+export const MaxCanDeleteFileCount = 5;
 export const MaxLength = 1024;
 export let Replica: any = 2;
 export const Duration = 3600;
@@ -30,9 +32,6 @@ export const Cids = [
   "QmbZU93HjXLn5wseFjCLyw1tM5BDoitSiZfR5o3Jo6C6tN", // hash: 0x68fc51c0de0c0e6be1067b90862da21f2e796b933851e5aaecf9d1d6f6ff332b
   "QmeN6JUjRSZJgdQFjFMX9PHwAFueWbRecLKBZgcqYLboir", // hash: 0x5ef8d464eb9a1baaf9c52ccfef2262fda94bd65cc559526f90e9ea37e73b2068
 ];
-
-export const MaxCanAddFileCount = 5;
-export const MaxCanDeleteFileCount = 5;
 
 export let setting: Setting;
 export let chainStorage: ChainStorage;

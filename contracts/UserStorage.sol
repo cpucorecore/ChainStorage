@@ -88,10 +88,6 @@ contract UserStorage is ExternalStorage, IUserStorage {
         return userAddresses.length();
     }
 
-    function getAllUserAddresses() external view returns (address[] memory) {
-        return userAddresses.values();
-    }
-
     function getAllUserAddresses(uint256 pageSize, uint256 pageNumber) external view returns (address[] memory, bool) {
         Paging.Page memory page = Paging.getPage(userAddresses.length(), pageSize, pageNumber);
         uint256 start = page.pageNumber.sub(1).mul(page.pageSize);

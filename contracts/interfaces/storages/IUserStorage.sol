@@ -18,7 +18,6 @@ interface IUserStorage {
     function getStorageUsed(address userAddress) external view returns (uint256);
 
     function getUserCount() external view returns (uint256);
-    function getAllUserAddresses() external view returns (address[] memory);
     function getAllUserAddresses(uint256 pageSize, uint256 pageNumber) external view returns (address[] memory, bool);
 
     function fileExist(address userAddress, string calldata cid) external view returns (bool);

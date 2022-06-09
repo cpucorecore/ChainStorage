@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { assert, expect } from "chai";
 import {
   Cids,
   Duration,
@@ -26,7 +26,7 @@ describe("User", function () {
 
   before(async () => {
     await prepareContext(0, 1, 1);
-    user = accounts[10];
+    user = accounts[0];
     userAddress = await user.getAddress();
   });
 
@@ -38,29 +38,226 @@ describe("User", function () {
     await revertToSnapshot();
   });
 
-  it("exist", async function () {
+  it("should not exist before register", async function () {
     expect(await userStorage.exist(userAddress)).to.equal(false);
+  });
 
+  it("should exist after register", async function () {
     await chainStorage.connect(user).userRegister(UserExt);
     expect(await userStorage.exist(userAddress)).to.equal(true);
+  });
 
+  it("should not exist after deRegister", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
     await chainStorage.connect(user).userDeRegister();
     expect(await userStorage.exist(userAddress)).to.equal(false);
   });
 
-  it("ext", async function () {
-    const newExt = "newExt";
+  it("should not duplicated register", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    await expect(
+      chainStorage.connect(user).userRegister(UserExt)
+    ).to.revertedWith("U:user exist");
+  });
 
+  it("should not duplicated deRegister", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    await chainStorage.connect(user).userDeRegister();
+    await expect(chainStorage.connect(user).userDeRegister()).to.revertedWith(
+      "U:user not exist"
+    );
+  });
+
+  it("ext should be empty", async function () {
     expect(await userStorage.getExt(userAddress)).to.equal("");
+  });
 
+  it("ext should equal to user register ext", async function () {
     await chainStorage.connect(user).userRegister(UserExt);
     expect(await userStorage.getExt(userAddress)).to.equal(UserExt);
+  });
 
+  it("ext should equal to user set ext", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    const newExt = "newExt";
     await chainStorage.connect(user).userSetExt(newExt);
     expect(await userStorage.getExt(userAddress)).to.equal(newExt);
+  });
 
+  it("ext should be empty after user deRegister", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
     await chainStorage.connect(user).userDeRegister();
     expect(await userStorage.getExt(userAddress)).to.equal("");
+  });
+
+
+
+  it("storageTotal should be 0", async function () {
+    expect(await userStorage.getStorageTotal(userAddress)).to.equal(0);
+  });
+
+  it("storageTotal should equal to user initSpace ", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    expect(await userStorage.getStorageTotal(userAddress)).to.equal(
+      UserStorageTotal
+    );
+  });
+
+  it("storageTotal should equal to set", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    const newUserStorageTotal = UserStorageTotal * 2;
+    await chainStorage
+      .connect(deployer)
+      .userSetStorageTotal(userAddress, newUserStorageTotal);
+    expect(await userStorage.getStorageTotal(userAddress)).to.equal(
+      newUserStorageTotal
+    );
+  });
+
+  it("storageTotal should be 0 after user deRegister", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    await chainStorage.connect(user).userDeRegister();
+    expect(await userStorage.getStorageTotal(userAddress)).to.equal(0);
+  });
+
+  it("available space should equal to InitSpace after user register", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    expect(await userStorage.availableSpace(userAddress)).to.equal(
+      UserStorageTotal
+    );
+  });
+
+  it("available space test1", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
+    expect(await userStorage.availableSpace(userAddress)).to.equal(
+      UserStorageTotal
+    );
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cid, FileSize);
+    await chainStorage.connect(nodes[0]).nodeAddFile(Cid);
+    expect(await userStorage.availableSpace(userAddress)).to.equal(
+      UserStorageTotal - FileSize
+    );
+  });
+
+  it("available space test2", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cid, FileSize);
+    await chainStorage.connect(nodes[0]).nodeAddFile(Cid);
+    await chainStorage.connect(user).userDeleteFile(Cid);
+    await chainStorage.connect(nodes[0]).nodeCanDeleteFile(Cid);
+    await chainStorage.connect(nodes[0]).nodeDeleteFile(Cid);
+    expect(await userStorage.availableSpace(userAddress)).to.equal(
+      UserStorageTotal
+    );
+  });
+
+  it("storage used test1", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
+    expect(await userStorage.getStorageUsed(userAddress)).to.equal(0);
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cid, FileSize);
+    await chainStorage.connect(nodes[0]).nodeAddFile(Cid);
+    expect(await userStorage.getStorageUsed(userAddress)).to.equal(FileSize);
+  });
+
+  it("storage used test2", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
+    expect(await userStorage.getStorageUsed(userAddress)).to.equal(0);
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cid, FileSize);
+    await chainStorage.connect(nodes[0]).nodeAddFile(Cid);
+    await chainStorage.connect(user).userDeleteFile(Cid);
+    await chainStorage.connect(nodes[0]).nodeCanDeleteFile(Cid);
+    await chainStorage.connect(nodes[0]).nodeDeleteFile(Cid);
+    expect(await userStorage.getStorageUsed(userAddress)).to.equal(0);
+  });
+
+  it("userCount should be 0", async function () {
+    expect(await userStorage.getUserCount()).to.equal(0);
+  });
+
+  it("userCount should > 0 after user register", async function () {
+    await chainStorage.connect(accounts[0]).userRegister(UserExt);
+    expect(await userStorage.getUserCount()).to.equal(1);
+    await chainStorage.connect(accounts[1]).userRegister(UserExt);
+    expect(await userStorage.getUserCount()).to.equal(2);
+  });
+
+  it("userCount should be 0 after user deRegister", async function () {
+    await chainStorage.connect(accounts[0]).userRegister(UserExt);
+    await chainStorage.connect(accounts[0]).userDeRegister();
+    expect(await userStorage.getUserCount()).to.equal(0);
+  });
+
+  it("file should not exist", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    expect(await userStorage.fileExist(userAddress, Cid)).to.equal(false);
+  });
+
+  it("file should exist after user add file", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
+    expect(await userStorage.fileExist(userAddress, Cid)).to.equal(true);
+  });
+
+  it("file should not exist after user delete file", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cid, FileSize);
+    await chainStorage.connect(nodes[0]).nodeAddFile(Cid);
+    await chainStorage.connect(user).userDeleteFile(Cid);
+    expect(await userStorage.fileExist(userAddress, Cid)).to.equal(true);
+    await chainStorage.connect(nodes[0]).nodeCanDeleteFile(Cid);
+    await chainStorage.connect(nodes[0]).nodeDeleteFile(Cid);
+    expect(await userStorage.fileExist(userAddress, Cid)).to.equal(false);
+  });
+
+  it("file ext should empty", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    expect(await userStorage.getFileExt(userAddress, Cid)).to.equal("");
+  });
+
+  it("file ext should equal to user file ext", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
+    expect(await userStorage.getFileExt(userAddress, Cid)).to.equal(FileExt);
+  });
+
+  it("file ext should empty after user delete file", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cid, FileSize);
+    await chainStorage.connect(nodes[0]).nodeAddFile(Cid);
+    await chainStorage.connect(user).userDeleteFile(Cid);
+    await chainStorage.connect(nodes[0]).nodeCanDeleteFile(Cid);
+    await chainStorage.connect(nodes[0]).nodeDeleteFile(Cid);
+    expect(await userStorage.getFileExt(userAddress, Cid)).to.equal("");
+  });
+
+  it("file duration should be 0", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    expect(await userStorage.getFileDuration(userAddress, Cid)).to.equal(0);
+  });
+
+  it("file duration should equal to user file duration", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
+    expect(await userStorage.getFileDuration(userAddress, Cid)).to.equal(
+      Duration
+    );
+  });
+
+  it("file duration should be 0 after user delete file", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    await chainStorage.connect(user).userAddFile(Cid, Duration, FileExt);
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cid, FileSize);
+    await chainStorage.connect(nodes[0]).nodeAddFile(Cid);
+    await chainStorage.connect(user).userDeleteFile(Cid);
+    await chainStorage.connect(nodes[0]).nodeCanDeleteFile(Cid);
+    await chainStorage.connect(nodes[0]).nodeDeleteFile(Cid);
+    expect(await userStorage.getFileDuration(userAddress, Cid)).to.equal(0);
   });
 
   it("file ext test", async function () {
@@ -167,7 +364,7 @@ describe("User", function () {
     );
   });
 
-  it("storage total", async function () {
+  it("storage total test", async function () {
     expect(await userStorage.getStorageTotal(userAddress)).to.equal(0);
 
     await chainStorage.connect(user).userRegister(UserExt);
@@ -187,7 +384,7 @@ describe("User", function () {
     expect(await userStorage.getStorageTotal(userAddress)).to.equal(0);
   });
 
-  it("total user number", async function () {
+  it("user count test", async function () {
     const user1 = accounts[0];
     const user2 = accounts[1];
     const user3 = accounts[2];
@@ -232,7 +429,7 @@ describe("User", function () {
     expect(await userStorage.getUserCount()).to.equal(2);
   });
 
-  it("user storage space", async function () {
+  it("user storage space test", async function () {
     const cid1 = Cids[0];
     const cid2 = Cids[1];
     const cid1size = 10001;
@@ -283,7 +480,7 @@ describe("User", function () {
     );
   });
 
-  it("task should finish when user space not enough", async function () {
+  it("user can add file when user space not enough", async function () {
     await chainStorage.connect(user).userRegister(UserExt);
     await chainStorage.connect(user).userAddFile(Cids[3], Duration, FileExt);
     await chainStorage
@@ -311,5 +508,67 @@ describe("User", function () {
     await expect(
       chainStorage.connect(user).userAddFile(Cids[0], Duration, FileExt)
     ).to.revertedWith("U:no available storage space");
+  });
+
+  it("user fileCount should be 0", async function () {
+    expect(await userStorage.getFileCount(userAddress)).to.equal(0);
+  });
+
+  it("user fileCount should > 0 after add file", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    await chainStorage.connect(user).userAddFile(Cids[0], Duration, FileExt);
+    expect(await userStorage.getFileCount(userAddress)).to.equal(1);
+  });
+
+  it("user fileCount should be 0 after delete file", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    await chainStorage.connect(user).userAddFile(Cids[0], Duration, FileExt);
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cids[0], FileSize);
+    await chainStorage.connect(nodes[0]).nodeAddFile(Cids[0]);
+    await chainStorage.connect(user).userDeleteFile(Cids[0]);
+    expect(await userStorage.getFileCount(userAddress)).to.equal(1);
+    await chainStorage.connect(nodes[0]).nodeCanDeleteFile(Cids[0]);
+    await chainStorage.connect(nodes[0]).nodeDeleteFile(Cids[0]);
+    expect(await userStorage.getFileCount(userAddress)).to.equal(0);
+  });
+
+  it("getAllUserAddresses test", async function () {
+    await chainStorage.connect(accounts[0]).userRegister(UserExt);
+    let result = await userStorage.getAllUserAddresses(50, 1);
+    console.log("all user addresses: ", result[0]);
+    await chainStorage.connect(accounts[1]).userRegister(UserExt);
+    await chainStorage.connect(accounts[2]).userRegister(UserExt);
+    result = await userStorage.getAllUserAddresses(50, 1);
+    console.log("all user addresses: ", result[0]);
+    assert(result[1]);
+
+    result = await userStorage.getAllUserAddresses(1, 2);
+    console.log("all user addresses: ", result[0]);
+    assert(!result[1]);
+
+    result = await userStorage.getAllUserAddresses(1, 3);
+    console.log("all user addresses: ", result[0]);
+    assert(result[1]);
+  });
+
+  it("getFiles test", async function () {
+    await chainStorage.connect(user).userRegister(UserExt);
+    await chainStorage.connect(user).userAddFile(Cids[0], Duration, FileExt);
+    let result = await userStorage.getFiles(userAddress, 50, 1);
+    console.log("getFiles: ", result[0]);
+
+    await chainStorage.connect(user).userAddFile(Cids[1], Duration, FileExt);
+    await chainStorage.connect(user).userAddFile(Cids[2], Duration, FileExt);
+    result = await userStorage.getFiles(userAddress, 50, 1);
+    console.log("getFiles: ", result[0]);
+    assert(result[1]);
+
+    result = await userStorage.getFiles(userAddress, 1, 2);
+    console.log("getFiles: ", result[0]);
+    assert(!result[1]);
+
+    result = await userStorage.getFiles(userAddress, 1, 3);
+    console.log("getFiles: ", result[0]);
+    assert(result[1]);
   });
 });
