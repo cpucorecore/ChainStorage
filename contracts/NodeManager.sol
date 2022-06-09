@@ -120,7 +120,7 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
         require(_Storage().fileExist(nodeAddress, cid), "N:node have not the file");
 
         uint256 maxNodeCanDeleteFile = _Setting().getMaxNodeCanDeleteFileCount();
-        require(_Storage().getCanDeleteFileCount(nodeAddress) < maxNodeCanDeleteFile, "N:must finish deleteFile");
+        require(_Storage().getNodeCanDeleteFileCount(nodeAddress) < maxNodeCanDeleteFile, "N:must finish deleteFile");
 
         bool allNodeCanDeleteFile = _Storage().nodeCanDeleteFile(nodeAddress, cid);
         if (allNodeCanDeleteFile) {

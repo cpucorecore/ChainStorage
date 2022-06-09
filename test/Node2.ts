@@ -130,6 +130,21 @@ describe("Node2", function () {
     ).to.revertedWith("N:file not exist");
   });
 
+  it("nodeCanAddFile should failed for", async function () {
+    await chainStorage
+      .connect(users[0])
+      .userAddFile(Cids[0], Duration, FileExt);
+
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cids[0], FileSize);
+    await chainStorage.connect(nodes[1]).nodeCanAddFile(Cids[0], FileSize);
+    await chainStorage.connect(nodes[2]).nodeCanAddFile(Cids[0], FileSize);
+
+    await chainStorage.connect(nodes[0]).nodeAddFile(Cids[0]);
+    await expect(
+      chainStorage.connect(nodes[3]).nodeCanAddFile(Cids[0], FileSize)
+    ).to.revertedWith("F:wrong status");
+  });
+
   it("nodeCanDeleteFile should failed for node have not this file", async function () {
     await chainStorage
       .connect(users[0])
@@ -147,5 +162,194 @@ describe("Node2", function () {
     await expect(
       chainStorage.connect(nodes[3]).nodeCanDeleteFile(Cids[0])
     ).to.revertedWith("N:node have not the file");
+  });
+
+  it("getCanAddFileNodeCount test", async function () {
+    await chainStorage
+      .connect(users[0])
+      .userAddFile(Cids[0], Duration, FileExt);
+
+    expect(await nodeStorage.getCanAddFileNodeCount(Cids[0])).to.equal(0);
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cids[0], FileSize);
+    expect(await nodeStorage.getCanAddFileNodeCount(Cids[0])).to.equal(1);
+    await chainStorage.connect(nodes[1]).nodeCanAddFile(Cids[0], FileSize);
+    expect(await nodeStorage.getCanAddFileNodeCount(Cids[0])).to.equal(2);
+    await chainStorage.connect(nodes[2]).nodeCanAddFile(Cids[0], FileSize);
+    expect(await nodeStorage.getCanAddFileNodeCount(Cids[0])).to.equal(3);
+
+    await chainStorage.connect(nodes[0]).nodeAddFile(Cids[0]);
+    expect(await nodeStorage.getCanAddFileNodeCount(Cids[0])).to.equal(2);
+    await chainStorage.connect(nodes[1]).nodeAddFile(Cids[0]);
+    expect(await nodeStorage.getCanAddFileNodeCount(Cids[0])).to.equal(1);
+    await chainStorage.connect(nodes[2]).nodeAddFile(Cids[0]);
+    expect(await nodeStorage.getCanAddFileNodeCount(Cids[0])).to.equal(0);
+  });
+
+  it("isCanAddFile test", async function () {
+    await chainStorage
+      .connect(users[0])
+      .userAddFile(Cids[0], Duration, FileExt);
+
+    expect(await nodeStorage.isCanAddFile(nodeAddresses[0], Cids[0])).to.equal(
+      false
+    );
+    expect(await nodeStorage.isCanAddFile(nodeAddresses[1], Cids[0])).to.equal(
+      false
+    );
+    expect(await nodeStorage.isCanAddFile(nodeAddresses[2], Cids[0])).to.equal(
+      false
+    );
+
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cids[0], FileSize);
+    expect(await nodeStorage.isCanAddFile(nodeAddresses[0], Cids[0])).to.equal(
+      true
+    );
+    await chainStorage.connect(nodes[1]).nodeCanAddFile(Cids[0], FileSize);
+    await chainStorage.connect(nodes[2]).nodeCanAddFile(Cids[0], FileSize);
+
+    expect(await nodeStorage.isCanAddFile(nodeAddresses[0], Cids[0])).to.equal(
+      true
+    );
+    expect(await nodeStorage.isCanAddFile(nodeAddresses[1], Cids[0])).to.equal(
+      true
+    );
+    expect(await nodeStorage.isCanAddFile(nodeAddresses[2], Cids[0])).to.equal(
+      true
+    );
+
+    await chainStorage.connect(nodes[0]).nodeAddFile(Cids[0]);
+    expect(await nodeStorage.isCanAddFile(nodeAddresses[0], Cids[0])).to.equal(
+      false
+    );
+
+    await chainStorage.connect(nodes[1]).nodeAddFile(Cids[0]);
+    expect(await nodeStorage.isCanAddFile(nodeAddresses[1], Cids[0])).to.equal(
+      false
+    );
+
+    await chainStorage.connect(nodes[2]).nodeAddFile(Cids[0]);
+    expect(await nodeStorage.isCanAddFile(nodeAddresses[2], Cids[0])).to.equal(
+      false
+    );
+  });
+
+  it("isFileAdded test", async function () {
+    await chainStorage
+      .connect(users[0])
+      .userAddFile(Cids[0], Duration, FileExt);
+
+    expect(await nodeStorage.isFileAdded(nodeAddresses[0], Cids[0])).to.equal(
+      false
+    );
+    expect(await nodeStorage.isFileAdded(nodeAddresses[1], Cids[0])).to.equal(
+      false
+    );
+    expect(await nodeStorage.isFileAdded(nodeAddresses[2], Cids[0])).to.equal(
+      false
+    );
+
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cids[0], FileSize);
+    await chainStorage.connect(nodes[1]).nodeCanAddFile(Cids[0], FileSize);
+    await chainStorage.connect(nodes[2]).nodeCanAddFile(Cids[0], FileSize);
+
+    expect(await nodeStorage.isFileAdded(nodeAddresses[0], Cids[0])).to.equal(
+      false
+    );
+    expect(await nodeStorage.isFileAdded(nodeAddresses[1], Cids[0])).to.equal(
+      false
+    );
+    expect(await nodeStorage.isFileAdded(nodeAddresses[2], Cids[0])).to.equal(
+      false
+    );
+
+    await chainStorage.connect(nodes[0]).nodeAddFile(Cids[0]);
+    await chainStorage.connect(nodes[1]).nodeAddFile(Cids[0]);
+    await chainStorage.connect(nodes[2]).nodeAddFile(Cids[0]);
+
+    expect(await nodeStorage.isFileAdded(nodeAddresses[0], Cids[0])).to.equal(
+      true
+    );
+    expect(await nodeStorage.isFileAdded(nodeAddresses[1], Cids[0])).to.equal(
+      true
+    );
+    expect(await nodeStorage.isFileAdded(nodeAddresses[2], Cids[0])).to.equal(
+      true
+    );
+  });
+
+  it("getNodeCanDeleteFileCount test", async function () {
+    await chainStorage
+      .connect(users[0])
+      .userAddFile(Cids[0], Duration, FileExt);
+    await chainStorage
+      .connect(users[0])
+      .userAddFile(Cids[1], Duration, FileExt);
+    await chainStorage
+      .connect(users[0])
+      .userAddFile(Cids[2], Duration, FileExt);
+
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cids[0], FileSize);
+    await chainStorage.connect(nodes[1]).nodeCanAddFile(Cids[0], FileSize);
+    await chainStorage.connect(nodes[2]).nodeCanAddFile(Cids[0], FileSize);
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cids[1], FileSize);
+    await chainStorage.connect(nodes[1]).nodeCanAddFile(Cids[1], FileSize);
+    await chainStorage.connect(nodes[2]).nodeCanAddFile(Cids[1], FileSize);
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cids[2], FileSize);
+    await chainStorage.connect(nodes[1]).nodeCanAddFile(Cids[2], FileSize);
+    await chainStorage.connect(nodes[2]).nodeCanAddFile(Cids[2], FileSize);
+
+    await chainStorage.connect(nodes[0]).nodeAddFile(Cids[0]);
+    await chainStorage.connect(nodes[1]).nodeAddFile(Cids[0]);
+    await chainStorage.connect(nodes[2]).nodeAddFile(Cids[0]);
+    await chainStorage.connect(nodes[0]).nodeAddFile(Cids[1]);
+    await chainStorage.connect(nodes[1]).nodeAddFile(Cids[1]);
+    await chainStorage.connect(nodes[2]).nodeAddFile(Cids[1]);
+    await chainStorage.connect(nodes[0]).nodeAddFile(Cids[2]);
+    await chainStorage.connect(nodes[1]).nodeAddFile(Cids[2]);
+    await chainStorage.connect(nodes[2]).nodeAddFile(Cids[2]);
+
+    await chainStorage.connect(users[0]).userDeleteFile(Cids[0]);
+    await chainStorage.connect(users[0]).userDeleteFile(Cids[1]);
+    await chainStorage.connect(users[0]).userDeleteFile(Cids[2]);
+
+    expect(
+      await nodeStorage.getNodeCanDeleteFileCount(nodeAddresses[0])
+    ).to.equal(0);
+
+    await chainStorage.connect(nodes[0]).nodeCanDeleteFile(Cids[0]);
+    expect(
+      await nodeStorage.getNodeCanDeleteFileCount(nodeAddresses[0])
+    ).to.equal(1);
+    await chainStorage.connect(nodes[0]).nodeCanDeleteFile(Cids[1]);
+    expect(
+      await nodeStorage.getNodeCanDeleteFileCount(nodeAddresses[0])
+    ).to.equal(2);
+    await chainStorage.connect(nodes[0]).nodeCanDeleteFile(Cids[2]);
+    expect(
+      await nodeStorage.getNodeCanDeleteFileCount(nodeAddresses[0])
+    ).to.equal(3);
+
+    await chainStorage.connect(nodes[1]).nodeCanDeleteFile(Cids[0]);
+    await chainStorage.connect(nodes[1]).nodeCanDeleteFile(Cids[1]);
+    await chainStorage.connect(nodes[1]).nodeCanDeleteFile(Cids[2]);
+
+    await chainStorage.connect(nodes[2]).nodeCanDeleteFile(Cids[0]);
+    await chainStorage.connect(nodes[2]).nodeCanDeleteFile(Cids[1]);
+    await chainStorage.connect(nodes[2]).nodeCanDeleteFile(Cids[2]);
+
+    await chainStorage.connect(nodes[0]).nodeDeleteFile(Cids[0]);
+    expect(
+      await nodeStorage.getNodeCanDeleteFileCount(nodeAddresses[0])
+    ).to.equal(2);
+
+    await chainStorage.connect(nodes[0]).nodeDeleteFile(Cids[1]);
+    expect(
+      await nodeStorage.getNodeCanDeleteFileCount(nodeAddresses[0])
+    ).to.equal(1);
+
+    await chainStorage.connect(nodes[0]).nodeDeleteFile(Cids[2]);
+    expect(
+      await nodeStorage.getNodeCanDeleteFileCount(nodeAddresses[0])
+    ).to.equal(0);
   });
 });
