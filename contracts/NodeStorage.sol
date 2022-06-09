@@ -149,17 +149,16 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         return nodes[nodeAddress].canAddFileCidHashes.values();
     }
 
-    function isSizeConsistent(string calldata cid) external view returns (bool, uint256) {
+    function isSizeConsistent(string calldata cid) external view returns (bool) {
         bytes32 cidHash = keccak256(bytes(cid));
         uint256 size = files[cidHash2canAddFileNodeAddresses[cidHash].at(0)][cidHash];
-
         for(uint i=1; i<cidHash2canAddFileNodeAddresses[cidHash].length(); i++) {
             if (size != files[cidHash2canAddFileNodeAddresses[cidHash].at(i)][cidHash]) {
-                return (false, 0);
+                return false;
             }
         }
 
-        return (true, size);
+        return true;
     }
 
     function getCanAddFileNodeAddresses(string calldata cid) external view returns (address[] memory) {
@@ -198,9 +197,9 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         }
 
         bool allNodeFinishAddFile = true;
-        address[] memory nodeAddresses = cidHash2canAddFileNodeAddresses[cidHash].values();
-        for(uint i=0; i<nodeAddresses.length; i++) {
-            if (!nodes[nodeAddresses[i]].cidHashes.contains(cidHash)) {
+        address[] memory addresses = cidHash2canAddFileNodeAddresses[cidHash].values();
+        for(uint i=0; i<addresses.length; i++) {
+            if (!nodes[addresses[i]].cidHashes.contains(cidHash)) {
                 allNodeFinishAddFile = false;
                 break;
             }
@@ -226,10 +225,10 @@ contract NodeStorage is ExternalStorage, INodeStorage {
             nodes[nodeAddress].canDeleteFileCidHashes.add(cidHash);
         }
 
-        address[] memory nodeAddresses = getNodeAddresses(cid);
+        address[] memory addresses = getNodeAddresses(cid);
         bool allNodeCanDeleteFile = true;
-        for(uint i=0; i<nodeAddresses.length; i++) {
-            if (!cidHash2canDeleteFileNodeAddresses[cidHash].contains(nodeAddresses[i])) {
+        for(uint i=0; i<addresses.length; i++) {
+            if (!cidHash2canDeleteFileNodeAddresses[cidHash].contains(addresses[i])) {
                 allNodeCanDeleteFile = false;
                 break;
             }
@@ -264,9 +263,9 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         }
 
         bool allNodeFinishDeleteFile = true;
-        address[] memory nodeAddresses = cidHash2canDeleteFileNodeAddresses[cidHash].values();
-        for(uint i=0; i<nodeAddresses.length; i++) {
-            if (nodes[nodeAddresses[i]].cidHashes.contains(cidHash)) {
+        address[] memory addresses = cidHash2canDeleteFileNodeAddresses[cidHash].values();
+        for(uint i=0; i<addresses.length; i++) {
+            if (nodes[addresses[i]].cidHashes.contains(cidHash)) {
                 allNodeFinishDeleteFile = false;
                 break;
             }

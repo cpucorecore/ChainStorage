@@ -5,7 +5,6 @@ import "./base/Pausable.sol";
 import "./base/Importable.sol";
 import "./interfaces/IUserManager.sol";
 import "./interfaces/INodeManager.sol";
-import "./interfaces/IMonitor.sol";
 import "./interfaces/ISetting.sol";
 
 contract ChainStorage is Proxyable, Pausable, Importable {
@@ -22,7 +21,6 @@ contract ChainStorage is Proxyable, Pausable, Importable {
         CONTRACT_SETTING,
         CONTRACT_USER_MANAGER,
         CONTRACT_NODE_MANAGER,
-        CONTRACT_MONITOR,
         ACCOUNT_ADMIN
         ];
     }
@@ -37,10 +35,6 @@ contract ChainStorage is Proxyable, Pausable, Importable {
 
     function _NodeManager() private view returns (INodeManager) {
         return INodeManager(requireAddress(CONTRACT_NODE_MANAGER));
-    }
-
-    function _Monitor() private view returns (IMonitor) {
-        return IMonitor(requireAddress(CONTRACT_MONITOR));
     }
 
     function userRegister(string calldata ext) external {
@@ -131,23 +125,6 @@ contract ChainStorage is Proxyable, Pausable, Importable {
     function nodeDeleteFile(string calldata cid) external {
         _mustOnline();
         _NodeManager().nodeDeleteFile(msg.sender, cid);
-    }
-
-    function monitorRegister(string calldata ext) external {
-        _mustOnline();
-        require(bytes(ext).length <= _Setting().getMaxMonitorExtLength(), "CS:monitor ext too long");
-        _Monitor().register(msg.sender, ext);
-    }
-
-    function monitorDeRegister() external {
-        _mustOnline();
-        _Monitor().deRegister(msg.sender);
-    }
-
-    function monitorSetExt(string calldata ext) external {
-        _mustOnline();
-        require(bytes(ext).length <= _Setting().getMaxMonitorExtLength(), "CS:monitor ext too long");
-        _Monitor().setExt(msg.sender, ext);
     }
 
     function _mustOnline() private {

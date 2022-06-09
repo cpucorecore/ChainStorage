@@ -8,7 +8,6 @@ contract Constants {
     bytes32 internal constant CONTRACT_FILE_MANAGER = 'FileManager';
     bytes32 internal constant CONTRACT_USER_MANAGER = 'UserManager';
     bytes32 internal constant CONTRACT_NODE_MANAGER = 'NodeManager';
-    bytes32 internal constant CONTRACT_MONITOR = 'Monitor';
 
     bytes32 internal constant ACCOUNT_ADMIN = 'Admin';
 
