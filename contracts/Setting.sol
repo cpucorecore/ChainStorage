@@ -13,8 +13,8 @@ contract Setting is ExternalStorable, ISetting {
     bytes32 private constant MAX_MONITOR_EXT_LENGTH = 'MaxMonitorExtLength';
     bytes32 private constant MAX_FILE_EXT_LENGTH = 'MaxFileExtLength';
     bytes32 private constant MAX_CID_LENGTH = 'MaxCidLength';
-    bytes32 private constant MAX_CAN_ADD_FILE_COUNT = 'MaxCanAddFileCount';
-    bytes32 private constant MAX_CAN_DELETE_FILE_COUNT = 'MaxCanDeleteFileCount';
+    bytes32 private constant MAX_NODE_CAN_ADD_FILE_COUNT = 'MaxNodeCanAddFileCount';
+    bytes32 private constant MAX_NODE_CAN_DELETE_FILE_COUNT = 'MaxNodeCanDeleteFileCount';
 
     constructor() public {
         setContractName(CONTRACT_SETTING);
@@ -98,21 +98,21 @@ contract Setting is ExternalStorable, ISetting {
         _Storage().setUint(MAX_CID_LENGTH, length);
     }
 
-    function getMaxCanAddFileCount() external view returns (uint256) {
-        return _Storage().getUint(MAX_CAN_ADD_FILE_COUNT);
+    function getMaxNodeCanAddFileCount() external view returns (uint256) {
+        return _Storage().getUint(MAX_NODE_CAN_ADD_FILE_COUNT);
     }
 
-    function setMaxCanAddFileCount(uint256 value) external {
+    function setMaxNodeCanAddFileCount(uint256 value) external {
         mustOwner();
-        _Storage().setUint(MAX_CAN_ADD_FILE_COUNT, value);
+        _Storage().setUint(MAX_NODE_CAN_ADD_FILE_COUNT, value);
     }
 
-    function getMaxCanDeleteFileCount() external view returns (uint256) {
-        return _Storage().getUint(MAX_CAN_DELETE_FILE_COUNT);
+    function getMaxNodeCanDeleteFileCount() external view returns (uint256) {
+        return _Storage().getUint(MAX_NODE_CAN_DELETE_FILE_COUNT);
     }
 
-    function setMaxCanDeleteFileCount(uint256 value) external {
+    function setMaxNodeCanDeleteFileCount(uint256 value) external {
         mustOwner();
-        _Storage().setUint(MAX_CAN_DELETE_FILE_COUNT, value);
+        _Storage().setUint(MAX_NODE_CAN_DELETE_FILE_COUNT, value);
     }
 }

@@ -10,8 +10,8 @@ import {
   userAddresses,
   deployerAddress,
   MaxLength,
-  MaxCanAddFileCount,
-  MaxCanDeleteFileCount,
+  MaxNodeCanAddFileCount,
+  MaxNodeCanDeleteFileCount,
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
 
@@ -117,18 +117,20 @@ describe("Setting", function () {
   });
 
   it("MaxCanAddFileCount get/set test", async function () {
-    const newValue = MaxCanAddFileCount * 2;
-    expect(await setting.getMaxCanAddFileCount()).to.equal(MaxCanAddFileCount);
-    await setting.connect(deployer).setMaxCanAddFileCount(newValue);
-    expect(await setting.getMaxCanAddFileCount()).to.equal(newValue);
+    const newValue = MaxNodeCanAddFileCount * 2;
+    expect(await setting.getMaxNodeCanAddFileCount()).to.equal(
+      MaxNodeCanAddFileCount
+    );
+    await setting.connect(deployer).setMaxNodeCanAddFileCount(newValue);
+    expect(await setting.getMaxNodeCanAddFileCount()).to.equal(newValue);
   });
 
   it("MaxCanDeleteFileCount get/set test", async function () {
-    const newValue = MaxCanDeleteFileCount * 2;
-    expect(await setting.getMaxCanDeleteFileCount()).to.equal(
-      MaxCanDeleteFileCount
+    const newValue = MaxNodeCanDeleteFileCount * 2;
+    expect(await setting.getMaxNodeCanDeleteFileCount()).to.equal(
+      MaxNodeCanDeleteFileCount
     );
-    await setting.connect(deployer).setMaxCanDeleteFileCount(newValue);
-    expect(await setting.getMaxCanDeleteFileCount()).to.equal(newValue);
+    await setting.connect(deployer).setMaxNodeCanDeleteFileCount(newValue);
+    expect(await setting.getMaxNodeCanDeleteFileCount()).to.equal(newValue);
   });
 });

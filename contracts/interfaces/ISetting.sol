@@ -25,11 +25,11 @@ interface ISetting {
     function getMaxCidLength() external view returns (uint256);
     function setMaxCidLength(uint256 length) external;
 
-    function getMaxCanAddFileCount() external view returns (uint256);
-    function setMaxCanAddFileCount(uint256 value) external;
+    function getMaxNodeCanAddFileCount() external view returns (uint256);
+    function setMaxNodeCanAddFileCount(uint256 value) external;
 
-    function getMaxCanDeleteFileCount() external view returns (uint256);
-    function setMaxCanDeleteFileCount(uint256 value) external;
+    function getMaxNodeCanDeleteFileCount() external view returns (uint256);
+    function setMaxNodeCanDeleteFileCount(uint256 value) external;
 
     event SettingChanged(bytes32 indexed name, bytes32 indexed field, uint256 previousValue, uint256 newValue);
 }

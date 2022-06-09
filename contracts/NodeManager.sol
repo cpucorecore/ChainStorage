@@ -73,10 +73,16 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
     function nodeCanAddFile(address nodeAddress, string calldata cid, uint256 size) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
 
-        uint256 maxCanAddFile = _Setting().getMaxCanAddFileCount();
-        require(_Storage().getCanAddFileCount(nodeAddress) <= maxCanAddFile, "N:must finish addFile");
+        require(_FileManager().exist(cid), "N:file not exist");
+
+        uint256 maxNodeCanAddFile = _Setting().getMaxNodeCanAddFileCount();
+        require(_Storage().getNodeCanAddFileCount(nodeAddress) < maxNodeCanAddFile, "N:must finish addFile");
+
+        uint256 replica = _FileManager().getReplica(cid);
+        require(_Storage().getCanAddFileNodeCount(cid) < replica, "N:can addFile node enough");
+
         uint256 count = _Storage().nodeCanAddFile(nodeAddress, cid, size);
-        if (count == _FileManager().getReplica(cid)) {
+        if (count == replica) {
             if (_Storage().isSizeConsistent(cid)) {
                 _FileManager().onBeginAddFile(cid, size);
                 address[] memory nodeAddresses = _Storage().getCanAddFileNodeAddresses(cid);
@@ -110,8 +116,11 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
     function nodeCanDeleteFile(address nodeAddress, string calldata cid) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
 
-        uint256 maxCanDeleteFile = _Setting().getMaxCanDeleteFileCount();
-        require(_Storage().getCanDeleteFileCount(nodeAddress) <= maxCanDeleteFile, "N:must finish deleteFile");
+        require(_FileManager().exist(cid), "N:file not exist");
+        require(_Storage().fileExist(nodeAddress, cid), "N:node have not the file");
+
+        uint256 maxNodeCanDeleteFile = _Setting().getMaxNodeCanDeleteFileCount();
+        require(_Storage().getCanDeleteFileCount(nodeAddress) < maxNodeCanDeleteFile, "N:must finish deleteFile");
 
         bool allNodeCanDeleteFile = _Storage().nodeCanDeleteFile(nodeAddress, cid);
         if (allNodeCanDeleteFile) {

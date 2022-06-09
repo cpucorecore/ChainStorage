@@ -15,8 +15,8 @@ import {
 
 export const NodeStorageTotal = 1024 * 1024 * 1024 * 100;
 export const UserStorageTotal = 1024 * 1024 * 1024 * 5;
-export const MaxCanAddFileCount = 5;
-export const MaxCanDeleteFileCount = 5;
+export const MaxNodeCanAddFileCount = 4;
+export const MaxNodeCanDeleteFileCount = 4;
 export const MaxLength = 1024;
 export let Replica: any = 2;
 export const Duration = 3600;
@@ -141,8 +141,8 @@ export async function prepareContext(
   await setting.setInitSpace(UserStorageTotal);
   await setting.setMaxCidLength(MaxLength);
   await setting.setAdmin(deployerAddress);
-  await setting.setMaxCanAddFileCount(MaxCanAddFileCount);
-  await setting.setMaxCanDeleteFileCount(MaxCanDeleteFileCount);
+  await setting.setMaxNodeCanAddFileCount(MaxNodeCanAddFileCount);
+  await setting.setMaxNodeCanDeleteFileCount(MaxNodeCanDeleteFileCount);
 
   let address;
   // create users
@@ -166,7 +166,7 @@ export async function prepareContext(
 }
 
 let _nodeNumber: any = 0;
-export async function registerMoreNodesAndOnline(nodeNumber: any) {
+export async function registerNodes(nodeNumber: any) {
   if (nodes.length + nodeNumber > accounts.length) {
     nodeNumber = accounts.length - nodes.length;
   }
