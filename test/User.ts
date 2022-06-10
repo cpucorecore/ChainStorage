@@ -15,7 +15,7 @@ import {
   UserStorageTotal,
   deployer,
   Cid,
-  FileSize,
+  FileSize, userAddresses
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
 import { Signer } from "ethers";
@@ -89,8 +89,6 @@ describe("User", function () {
     await chainStorage.connect(user).userDeRegister();
     expect(await userStorage.getExt(userAddress)).to.equal("");
   });
-
-
 
   it("storageTotal should be 0", async function () {
     expect(await userStorage.getStorageTotal(userAddress)).to.equal(0);
@@ -535,19 +533,31 @@ describe("User", function () {
   it("getAllUserAddresses test", async function () {
     await chainStorage.connect(accounts[0]).userRegister(UserExt);
     let result = await userStorage.getAllUserAddresses(50, 1);
-    console.log("all user addresses: ", result[0]);
+    expect(result[0]).to.lengthOf(1);
+    expect(result[0]).to.contains(accountAddresses[0]);
+
     await chainStorage.connect(accounts[1]).userRegister(UserExt);
+    result = await userStorage.getAllUserAddresses(50, 1);
+    expect(result[0]).to.lengthOf(2);
+    expect(result[0]).to.contains(accountAddresses[0]);
+    expect(result[0]).to.contains(accountAddresses[1]);
+
     await chainStorage.connect(accounts[2]).userRegister(UserExt);
     result = await userStorage.getAllUserAddresses(50, 1);
-    console.log("all user addresses: ", result[0]);
+    expect(result[0]).to.lengthOf(3);
+    expect(result[0]).to.contains(accountAddresses[0]);
+    expect(result[0]).to.contains(accountAddresses[1]);
+    expect(result[0]).to.contains(accountAddresses[2]);
     assert(result[1]);
 
     result = await userStorage.getAllUserAddresses(1, 2);
-    console.log("all user addresses: ", result[0]);
+    expect(result[0]).to.lengthOf(1);
+    expect(result[0]).to.contains(accountAddresses[1]);
     assert(!result[1]);
 
     result = await userStorage.getAllUserAddresses(1, 3);
-    console.log("all user addresses: ", result[0]);
+    expect(result[0]).to.lengthOf(1);
+    expect(result[0]).to.contains(accountAddresses[2]);
     assert(result[1]);
   });
 
@@ -555,20 +565,31 @@ describe("User", function () {
     await chainStorage.connect(user).userRegister(UserExt);
     await chainStorage.connect(user).userAddFile(Cids[0], Duration, FileExt);
     let result = await userStorage.getFiles(userAddress, 50, 1);
-    console.log("getFiles: ", result[0]);
+    expect(result[0]).to.lengthOf(1);
+    expect(result[0]).to.contains(Cids[0]);
 
     await chainStorage.connect(user).userAddFile(Cids[1], Duration, FileExt);
+    result = await userStorage.getFiles(userAddress, 50, 1);
+    expect(result[0]).to.lengthOf(2);
+    expect(result[0]).to.contains(Cids[0]);
+    expect(result[0]).to.contains(Cids[1]);
+
     await chainStorage.connect(user).userAddFile(Cids[2], Duration, FileExt);
     result = await userStorage.getFiles(userAddress, 50, 1);
-    console.log("getFiles: ", result[0]);
+    expect(result[0]).to.lengthOf(3);
+    expect(result[0]).to.contains(Cids[0]);
+    expect(result[0]).to.contains(Cids[1]);
+    expect(result[0]).to.contains(Cids[2]);
     assert(result[1]);
 
     result = await userStorage.getFiles(userAddress, 1, 2);
-    console.log("getFiles: ", result[0]);
+    expect(result[0]).to.lengthOf(1);
+    expect(result[0]).to.contains(Cids[1]);
     assert(!result[1]);
 
     result = await userStorage.getFiles(userAddress, 1, 3);
-    console.log("getFiles: ", result[0]);
+    expect(result[0]).to.lengthOf(1);
+    expect(result[0]).to.contains(Cids[2]);
     assert(result[1]);
   });
 });

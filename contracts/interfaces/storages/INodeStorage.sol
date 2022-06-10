@@ -41,5 +41,6 @@ interface INodeStorage {
     function getCanDeleteFileNodeAddresses(string calldata cid) external view returns (address[] memory);
     function nodeDeleteFile(address nodeAddress, string calldata cid) external returns (bool);
 
+    function getCidCount(address nodeAddress) external view returns (uint256);
     function getCidHashes(address nodeAddress, uint256 pageSize, uint256 pageNumber) external view returns (bytes32[] memory, bool);
 }

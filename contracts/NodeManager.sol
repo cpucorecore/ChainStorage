@@ -60,8 +60,7 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
         mustAddress(CONTRACT_CHAIN_STORAGE);
 
         _checkNodeExist(nodeAddress);
-        (bytes32[] memory cidHashes,) = _Storage().getCidHashes(nodeAddress, 1, 50);
-        require(0 == cidHashes.length, "N:cid not empty");
+        require(0 == _Storage().getCidCount(nodeAddress), "N:cid not empty");
         _Storage().deleteNode(nodeAddress);
     }
 

@@ -287,6 +287,10 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         return allNodeFinishDeleteFile;
     }
 
+    function getCidCount(address nodeAddress) external view returns (uint256) {
+        return nodes[nodeAddress].cidHashes.length();
+    }
+
     function getCidHashes(address nodeAddress, uint256 pageSize, uint256 pageNumber) external view returns (bytes32[] memory, bool) {
         Paging.Page memory page = Paging.getPage(nodes[nodeAddress].cidHashes.length(), pageSize, pageNumber);
         uint256 start = page.pageNumber.sub(1).mul(page.pageSize);

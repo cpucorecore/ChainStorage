@@ -13,7 +13,6 @@ import {
   Cid,
   FileSize,
   registerNodes,
-  revertNodes,
   nodeAddresses,
   nodes,
   accountAddresses,
