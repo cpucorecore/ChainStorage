@@ -51,7 +51,6 @@ contract FileStorage is ExternalStorage, IFileStorage {
         if (cidHashes.contains(cidHash)) {
             cidHashes.remove(cidHash);
         }
-        totalSize = totalSize.sub(cid2file[cid].size);
         delete cidHash2cid[cidHash];
         delete cid2file[cid];
     }
@@ -62,11 +61,7 @@ contract FileStorage is ExternalStorage, IFileStorage {
 
     function setSize(string calldata cid, uint256 size) external {
         mustManager(managerName);
-
-        if (0 == cid2file[cid].size) {
-            cid2file[cid].size = size;
-            totalSize = totalSize.add(size);
-        }
+        cid2file[cid].size = size;
     }
 
     function getReplica(string calldata cid) external view returns (uint256) {
@@ -162,6 +157,14 @@ contract FileStorage is ExternalStorage, IFileStorage {
             result[i] = nodes.at(start+i);
         }
         return (result, page.totalPages == page.pageNumber);
+    }
+
+    function addTotalSize(uint256 size) external {
+        totalSize = totalSize.add(size);
+    }
+
+    function subTotalSize(uint256 size) external {
+        totalSize = totalSize.sub(size);
     }
 
     function getTotalSize() external view returns (uint256) {

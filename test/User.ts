@@ -15,7 +15,7 @@ import {
   UserStorageTotal,
   deployer,
   Cid,
-  FileSize, userAddresses
+  FileSize,
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
 import { Signer } from "ethers";

@@ -71,6 +71,10 @@ contract FileManager is Importable, ExternalStorable, IFileManager {
         require(FileAdding == status || FilePartialAdded == status, "F:wrong status");
         require(!_Storage().nodeExist(cid, nodeAddress), "F:node exist");
 
+        if (_Storage().nodeEmpty(cid)) {
+            _Storage().addTotalSize(_Storage().getSize(cid));
+        }
+
         _Storage().addNode(cid, nodeAddress);
         _Storage().setStatus(cid, FilePartialAdded);
     }
@@ -132,6 +136,7 @@ contract FileManager is Importable, ExternalStorable, IFileManager {
 
         uint256 size = _Storage().getSize(cid);
         _Storage().deleteFile(cid);
+        _Storage().subTotalSize(size);
         _UserManager().onDeleteFileFinish(_Storage().getLastUser(cid), cid, size);
     }
 
