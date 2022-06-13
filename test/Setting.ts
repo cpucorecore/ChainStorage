@@ -51,10 +51,6 @@ describe("Setting", function () {
       setting.connect(users[8]).setMaxNodeExtLength(4)
     ).to.revertedWith(revertMsg);
 
-    await expect(
-      setting.connect(users[8]).setMaxMonitorExtLength(4)
-    ).to.revertedWith(revertMsg);
-
     await expect(setting.connect(users[8]).setMaxCidLength(4)).to.revertedWith(
       revertMsg
     );
