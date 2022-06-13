@@ -15,6 +15,8 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
     event TryRequestDeleteFile(string cid, address[] nodeAddresses);
     event RequestDeleteFile(string cid, address[] nodeAddresses);
 
+    event NodeAction(address indexed nodeAddress, uint256 action, string cid);
+
     constructor(IResolver _resolver) public Importable(_resolver) {
         setContractName(CONTRACT_NODE_MANAGER);
 
@@ -103,6 +105,8 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
         if (allNodeFinishAddFile) {
             _FileManager().onEndAddFile(cid);
         }
+
+        emit NodeAction(nodeAddress, Add, cid);
     }
 
     function deleteFile(string calldata cid) external {
@@ -140,6 +144,8 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
         if (allNodeFinishDeleteFile) {
             _FileManager().onEndDeleteFile(cid);
         }
+
+        emit NodeAction(nodeAddress, Delete, cid);
     }
 
     function _checkNodeExist(address nodeAddress) private view {

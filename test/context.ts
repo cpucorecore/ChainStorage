@@ -11,6 +11,7 @@ import {
   UserManager,
   UserStorage,
   Blacklist,
+  NodeManager,
   // eslint-disable-next-line node/no-missing-import
 } from "../typechain";
 
@@ -44,6 +45,7 @@ export const CidHashes = [
 export let setting: Setting;
 export let blacklist: Blacklist;
 export let chainStorage: ChainStorage;
+export let nodeManager: NodeManager;
 export let nodeStorage: NodeStorage;
 export let fileStorage: FileStorage;
 export let userManager: UserManager;
@@ -113,7 +115,7 @@ export async function prepareContext(
   await userManager.setStorage(userStorage.address);
   // deploy Node
   const NodeManager = await ethers.getContractFactory("NodeManager");
-  const nodeManager = await NodeManager.deploy(resolver.address);
+  nodeManager = await NodeManager.deploy(resolver.address);
   await nodeManager.deployed();
   // deploy NodeStorage
   const NodeStorage = await ethers.getContractFactory("NodeStorage");

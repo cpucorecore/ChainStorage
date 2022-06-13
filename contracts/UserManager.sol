@@ -11,7 +11,6 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
     event UserAction(address indexed userAddress, uint256 action, string cid);
 
     event AddFileFinished(address indexed userAddress, string cid);
-    event AddFileFailed(address indexed userAddress, string cid);
     event DeleteFileFinished(address indexed userAddress, string cid);
 
     constructor(IResolver _resolver) public Importable(_resolver) {
