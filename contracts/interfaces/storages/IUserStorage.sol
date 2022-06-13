@@ -31,4 +31,7 @@ interface IUserStorage {
 
     function getFileCount(address userAddress) external view returns (uint256);
     function getFiles(address userAddress, uint256 pageSize, uint256 pageNumber) external view returns (string[] memory, bool);
+
+    function approveAccount(address from, address to, bool approved) external;
+    function approveFile(address from, address to, string calldata cid, bool approved) external;
 }

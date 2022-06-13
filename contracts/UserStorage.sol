@@ -29,6 +29,9 @@ contract UserStorage is ExternalStorage, IUserStorage {
     EnumerableSet.AddressSet private userAddresses;
     mapping(address => mapping(bytes32 => File)) private files;
 
+    mapping(address => mapping(address => bool)) private accountApprovals;
+    mapping(address => mapping(address => mapping(bytes32 => bool))) private fileApprovals;
+
     constructor(address _manager) public ExternalStorage(_manager) {}
 
     function exist(address userAddress) public view returns (bool) {
@@ -158,5 +161,31 @@ contract UserStorage is ExternalStorage, IUserStorage {
             result[i] = files[userAddress][cidHashes.at(start+i)].cid;
         }
         return (result, page.totalPages == page.pageNumber);
+    }
+
+    function approveAccount(address from, address to, bool approved) external {
+        mustManager(managerName);
+        accountApprovals[from][to] = approved;
+    }
+
+    function isApproveAccount(address from, address to) public view returns (bool) {
+        return accountApprovals[from][to];
+    }
+
+    function approveFile(address from, address to, string calldata cid, bool approved) external {
+        mustManager(managerName);
+        bytes32 cidHash = keccak256(bytes(cid));
+        fileApprovals[from][to][cidHash] = approved;
+    }
+
+    function isApproveFile(address from, address to, string memory cid) public view returns (bool) {
+        bytes32 cidHash = keccak256(bytes(cid));
+        return fileApprovals[from][to][cidHash];
+    }
+
+    function isApprove(address from, address to, string calldata cid) external view returns (bool) {
+        if (isApproveAccount(from, to)) return true;
+        if (isApproveFile(from, to, cid)) return true;
+        return false;
     }
 }

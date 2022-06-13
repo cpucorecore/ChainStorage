@@ -14,4 +14,7 @@ interface IUserManager {
 
     function setFileExt(address userAddress, string calldata cid, string calldata ext) external;
     function setFileDuration(address userAddress, string calldata cid, uint256 duration) external;
+
+    function approveAccount(address from, address to, bool approved) external;
+    function approveFile(address from, address to, string calldata cid, bool approved) external;
 }

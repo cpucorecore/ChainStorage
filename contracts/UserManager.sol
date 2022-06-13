@@ -139,4 +139,19 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
 
         _Storage().setFileDuration(userAddress, cid, duration);
     }
+
+    function approveAccount(address from, address to, bool approved) external {
+        require(_Storage().exist(from), "U:user not exist");
+        require(_Storage().exist(to), "U:user not exist");
+
+        _Storage().approveAccount(from, to, approved);
+    }
+
+    function approveFile(address from, address to, string calldata cid, bool approved) external {
+        require(_Storage().exist(from), "U:user not exist");
+        require(_Storage().exist(to), "U:user not exist");
+        require(_FileManager().exist(cid), "U:file not exist");
+
+        _Storage().approveFile(from, to, cid, approved);
+    }
 }
