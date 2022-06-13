@@ -6,6 +6,7 @@ import "./base/Importable.sol";
 import "./interfaces/IUserManager.sol";
 import "./interfaces/INodeManager.sol";
 import "./interfaces/ISetting.sol";
+import "./interfaces/IBlacklist.sol";
 
 contract ChainStorage is Proxyable, Pausable, Importable {
     constructor() public Importable(IResolver(0)) {}
@@ -21,6 +22,7 @@ contract ChainStorage is Proxyable, Pausable, Importable {
         CONTRACT_SETTING,
         CONTRACT_USER_MANAGER,
         CONTRACT_NODE_MANAGER,
+        CONTRACT_BLACKLIST,
         ACCOUNT_ADMIN
         ];
     }
@@ -37,6 +39,10 @@ contract ChainStorage is Proxyable, Pausable, Importable {
         return INodeManager(requireAddress(CONTRACT_NODE_MANAGER));
     }
 
+    function _Blacklist() private view returns (IBlacklist) {
+        return IBlacklist(requireAddress(CONTRACT_BLACKLIST));
+    }
+
     function userRegister(string calldata ext) external {
         _mustOnline();
         require(bytes(ext).length <= _Setting().getMaxUserExtLength(), "CS:user ext too long");
@@ -49,10 +55,10 @@ contract ChainStorage is Proxyable, Pausable, Importable {
         _UserManager().setExt(msg.sender, ext);
     }
 
-    function userSetStorageTotal(address addr, uint256 storageTotal) external {
+    function userSetStorageTotal(address userAddress, uint256 storageTotal) external {
         _mustOnline();
         mustAddress(ACCOUNT_ADMIN);
-        _UserManager().setStorageTotal(addr, storageTotal);
+        _UserManager().setStorageTotal(userAddress, storageTotal);
     }
 
     function userDeRegister() external {
@@ -64,6 +70,8 @@ contract ChainStorage is Proxyable, Pausable, Importable {
         _mustOnline();
         require(bytes(ext).length <= _Setting().getMaxFileExtLength(), "CS:file ext too long");
         require(bytes(cid).length <= _Setting().getMaxCidLength(), "CS:cid too long");
+        require(_Blacklist().checkCid(cid), "CS:cid in blacklist");
+        require(_Blacklist().checkUser(msg.sender), "CS:user in blacklist");
         _UserManager().addFile(msg.sender, cid, duration, ext);
     }
 
@@ -109,6 +117,7 @@ contract ChainStorage is Proxyable, Pausable, Importable {
 
     function nodeCanAddFile(string calldata cid, uint256 size) external {
         _mustOnline();
+        require(_Blacklist().checkNode(msg.sender), "CS:node in blacklist");
         _NodeManager().nodeCanAddFile(msg.sender, cid, size);
     }
 

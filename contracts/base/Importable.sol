@@ -14,7 +14,7 @@ contract Importable is Ownable {
     }
 
     function mustAddress(bytes32 name) public {
-        require(msg.sender == _cache[name], contractName.concat(': caller is not the ', name));
+        require(msg.sender == _cache[name], "wrong caller");
     }
 
     function mustContainAddress(bytes32[] memory names) public {

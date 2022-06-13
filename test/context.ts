@@ -10,6 +10,7 @@ import {
   NodeStorage,
   UserManager,
   UserStorage,
+  Blacklist,
   // eslint-disable-next-line node/no-missing-import
 } from "../typechain";
 
@@ -41,6 +42,7 @@ export const CidHashes = [
 ];
 
 export let setting: Setting;
+export let blacklist: Blacklist;
 export let chainStorage: ChainStorage;
 export let nodeStorage: NodeStorage;
 export let fileStorage: FileStorage;
@@ -75,6 +77,10 @@ export async function prepareContext(
   const Resolver = await ethers.getContractFactory("Resolver");
   const resolver = await Resolver.deploy();
   await resolver.deployed();
+  // deploy Blacklist
+  const Blacklist = await ethers.getContractFactory("Blacklist");
+  blacklist = await Blacklist.deploy(resolver.address);
+  await blacklist.deployed();
   // deploy Setting
   const Setting = await ethers.getContractFactory("Setting");
   setting = await Setting.deploy();
@@ -126,6 +132,7 @@ export async function prepareContext(
   deployerAddress = await deployer.getAddress();
   await resolver.setAddress(string2bytes32("Admin"), deployerAddress);
   await resolver.setAddress(string2bytes32("Setting"), setting.address);
+  await resolver.setAddress(string2bytes32("Blacklist"), blacklist.address);
   await resolver.setAddress(string2bytes32("FileManager"), fileManager.address);
   await resolver.setAddress(string2bytes32("UserManager"), userManager.address);
   await resolver.setAddress(string2bytes32("NodeManager"), nodeManager.address);
@@ -138,6 +145,7 @@ export async function prepareContext(
   await userManager.refreshCache();
   await nodeManager.refreshCache();
   await chainStorage.refreshCache();
+  await blacklist.refreshCache();
 
   // setup setting
   await setting.setReplica(replica);
