@@ -95,13 +95,6 @@ describe("Setting", function () {
     expect(await setting.getMaxNodeExtLength()).to.equal(newValue);
   });
 
-  it("maxMonitorExtLength get/set test", async function () {
-    const newValue = MaxLength * 2;
-    expect(await setting.getMaxMonitorExtLength()).to.equal(MaxLength);
-    await setting.connect(deployer).setMaxMonitorExtLength(newValue);
-    expect(await setting.getMaxMonitorExtLength()).to.equal(newValue);
-  });
-
   it("maxFileExtLength get/set test", async function () {
     const newValue = MaxLength * 2;
     expect(await setting.getMaxFileExtLength()).to.equal(MaxLength);

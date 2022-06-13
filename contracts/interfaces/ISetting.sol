@@ -16,9 +16,6 @@ interface ISetting {
     function getMaxNodeExtLength() external view returns (uint256);
     function setMaxNodeExtLength(uint256 length) external;
 
-    function getMaxMonitorExtLength() external view returns (uint256);
-    function setMaxMonitorExtLength(uint256 length) external;
-
     function getMaxFileExtLength() external view returns (uint256);
     function setMaxFileExtLength(uint256 length) external;
 

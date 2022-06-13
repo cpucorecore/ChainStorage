@@ -10,7 +10,6 @@ contract Setting is ExternalStorable, ISetting {
     bytes32 private constant ADMIN_ACCOUNT = 'AdminAccount';
     bytes32 private constant MAX_USER_EXT_LENGTH = 'MaxUserExtLength';
     bytes32 private constant MAX_NODE_EXT_LENGTH = 'MaxNodeExtLength';
-    bytes32 private constant MAX_MONITOR_EXT_LENGTH = 'MaxMonitorExtLength';
     bytes32 private constant MAX_FILE_EXT_LENGTH = 'MaxFileExtLength';
     bytes32 private constant MAX_CID_LENGTH = 'MaxCidLength';
     bytes32 private constant MAX_NODE_CAN_ADD_FILE_COUNT = 'MaxNodeCanAddFileCount';
@@ -69,15 +68,6 @@ contract Setting is ExternalStorable, ISetting {
     function setMaxNodeExtLength(uint256 length) external {
         mustOwner();
         _Storage().setUint(MAX_NODE_EXT_LENGTH, length);
-    }
-
-    function getMaxMonitorExtLength() external view returns (uint256) {
-        return _Storage().getUint(MAX_MONITOR_EXT_LENGTH);
-    }
-
-    function setMaxMonitorExtLength(uint256 length) external {
-        mustOwner();
-        _Storage().setUint(MAX_MONITOR_EXT_LENGTH, length);
     }
 
     function getMaxFileExtLength() external view returns (uint256) {

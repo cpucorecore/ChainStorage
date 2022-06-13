@@ -153,7 +153,6 @@ export async function prepareContext(
   await setting.setReplica(replica);
   await setting.setMaxUserExtLength(MaxLength);
   await setting.setMaxNodeExtLength(MaxLength);
-  await setting.setMaxMonitorExtLength(MaxLength);
   await setting.setMaxFileExtLength(MaxLength);
   await setting.setInitSpace(UserStorageTotal);
   await setting.setMaxCidLength(MaxLength);
