@@ -1,4 +1,5 @@
 pragma solidity ^0.5.2;
+pragma experimental ABIEncoderV2; // use this can make contract size smaller
 
 import "./base/Importable.sol";
 import "./base/ExternalStorable.sol";
@@ -9,6 +10,9 @@ import "./interfaces/IFileManager.sol";
 
 contract UserManager is Importable, ExternalStorable, IUserManager {
     event UserAction(address indexed userAddress, uint256 action, string cid);
+    event FileExtSet(address indexed userAddress, string cid, string ext);
+    event AccountApproved(address indexed from, address indexed to, bool approved);
+    event FileApproved(address indexed from, address indexed to, string cid, bool approved);
 
     event AddFileFinished(address indexed userAddress, string cid);
     event DeleteFileFinished(address indexed userAddress, string cid);
@@ -84,7 +88,7 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
         }
 
         _Storage().addFile(userAddress, cid, duration, ext);
-
+        emit FileExtSet(userAddress, cid, ext);
         emit UserAction(userAddress, Add, cid);
     }
 
@@ -128,6 +132,7 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
         require(_Storage().fileExist(userAddress, cid), "U:file not exist");
 
         _Storage().setFileExt(userAddress, cid, ext);
+        emit FileExtSet(userAddress, cid, ext);
     }
 
     function setFileDuration(address userAddress, string calldata cid, uint256 duration) external {
@@ -140,17 +145,23 @@ contract UserManager is Importable, ExternalStorable, IUserManager {
     }
 
     function approveAccount(address from, address to, bool approved) external {
+        mustAddress(CONTRACT_CHAIN_STORAGE);
+
         require(_Storage().exist(from), "U:user not exist");
         require(_Storage().exist(to), "U:user not exist");
 
         _Storage().approveAccount(from, to, approved);
+        emit AccountApproved(from, to, approved);
     }
 
     function approveFile(address from, address to, string calldata cid, bool approved) external {
+        mustAddress(CONTRACT_CHAIN_STORAGE);
+
         require(_Storage().exist(from), "U:user not exist");
         require(_Storage().exist(to), "U:user not exist");
         require(_FileManager().exist(cid), "U:file not exist");
 
         _Storage().approveFile(from, to, cid, approved);
+        emit FileApproved(from, to, cid, approved);
     }
 }
