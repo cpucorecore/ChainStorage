@@ -11,7 +11,10 @@ import {
   FileSize,
   nodeAddresses,
   nodes,
-  Cids, CidHashes
+  Cids,
+  CidHashes,
+  fileStorage,
+  nodeManager,
   // eslint-disable-next-line node/no-missing-import
 } from "./context";
 
@@ -193,7 +196,7 @@ describe("Node2", function () {
     ).to.revertedWith("N:file not exist");
   });
 
-  it("nodeCanAddFile should failed for", async function () {
+  it("nodeCanAddFile should failed for wrong file status", async function () {
     await chainStorage
       .connect(users[0])
       .userAddFile(Cids[0], Duration, FileExt);
@@ -206,6 +209,93 @@ describe("Node2", function () {
     await expect(
       chainStorage.connect(nodes[3]).nodeCanAddFile(Cids[0], FileSize)
     ).to.revertedWith("F:wrong status");
+  });
+
+  it("canAddFileNodeCount should be update when nodeCancelCanAddFile", async function () {
+    await chainStorage
+      .connect(users[0])
+      .userAddFile(Cids[0], Duration, FileExt);
+
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cids[0], FileSize);
+    await chainStorage.connect(nodes[1]).nodeCanAddFile(Cids[0], FileSize + 1);
+    expect(await nodeStorage.getCanAddFileNodeCount(Cids[0])).to.equal(2);
+
+    await chainStorage.connect(nodes[1]).nodeCancelCanAddFile(Cids[0]);
+    expect(await nodeStorage.getCanAddFileNodeCount(Cids[0])).to.equal(1);
+  });
+
+  it("canAddFileNodeAddresses should be update when nodeCancelCanAddFile", async function () {
+    await chainStorage
+      .connect(users[0])
+      .userAddFile(Cids[0], Duration, FileExt);
+
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cids[0], FileSize);
+    let addresses = await nodeStorage.getCanAddFileNodeAddresses(Cids[0]);
+    expect(addresses).to.lengthOf(1);
+    expect(addresses).to.contains(nodeAddresses[0]);
+
+    await chainStorage.connect(nodes[0]).nodeCancelCanAddFile(Cids[0]);
+    addresses = await nodeStorage.getCanAddFileNodeAddresses(Cids[0]);
+    expect(addresses).to.lengthOf(0);
+  });
+
+  it("getNodeCanAddFileCidHashes should be update when nodeCancelCanAddFile", async function () {
+    await chainStorage
+      .connect(users[0])
+      .userAddFile(Cids[0], Duration, FileExt);
+
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cids[0], FileSize);
+    let cidHashes = await nodeStorage.getNodeCanAddFileCidHashes(
+      nodeAddresses[0]
+    );
+    expect(cidHashes).to.lengthOf(1);
+    expect(cidHashes).to.contains(CidHashes[0]);
+
+    await chainStorage.connect(nodes[0]).nodeCancelCanAddFile(Cids[0]);
+    cidHashes = await nodeStorage.getNodeCanAddFileCidHashes(nodeAddresses[0]);
+    expect(cidHashes).to.lengthOf(0);
+  });
+
+  it("nodeCancelCanAddFile complex test", async function () {
+    await chainStorage
+      .connect(users[0])
+      .userAddFile(Cids[0], Duration, FileExt);
+
+    await chainStorage.connect(nodes[0]).nodeCanAddFile(Cids[0], FileSize);
+    await chainStorage.connect(nodes[1]).nodeCanAddFile(Cids[0], FileSize + 1);
+    await chainStorage.connect(nodes[2]).nodeCanAddFile(Cids[0], FileSize);
+    expect(await nodeStorage.isSizeConsistent(Cids[0])).to.equal(false);
+
+    await chainStorage.connect(nodes[1]).nodeCancelCanAddFile(Cids[0]);
+    expect(await nodeStorage.isSizeConsistent(Cids[0])).to.equal(true);
+    expect(await fileStorage.getStatus(Cids[0])).to.equal(1);
+
+    await expect(
+      chainStorage.connect(nodes[1]).nodeCanAddFile(Cids[0], FileSize)
+    )
+      .to.emit(nodeManager, "RequestAddFile")
+      .withArgs(Cids[0], [
+        nodeAddresses[0],
+        nodeAddresses[2],
+        nodeAddresses[1],
+      ]);
+    expect(await fileStorage.getStatus(Cids[0])).to.equal(2);
+
+    await chainStorage.connect(nodes[0]).nodeAddFile(Cids[0]);
+    await chainStorage.connect(nodes[1]).nodeAddFile(Cids[0]);
+    expect(await fileStorage.getStatus(Cids[0])).to.equal(3);
+    await chainStorage.connect(nodes[2]).nodeAddFile(Cids[0]);
+    expect(await fileStorage.getStatus(Cids[0])).to.equal(4);
+
+    expect(
+      await nodeStorage.getNodeCanAddFileCidHashes(nodeAddresses[0])
+    ).to.lengthOf(0);
+    expect(
+      await nodeStorage.getNodeCanAddFileCidHashes(nodeAddresses[1])
+    ).to.lengthOf(0);
+    expect(
+      await nodeStorage.getNodeCanAddFileCidHashes(nodeAddresses[2])
+    ).to.lengthOf(0);
   });
 
   it("nodeCanDeleteFile should failed for node have not this file", async function () {

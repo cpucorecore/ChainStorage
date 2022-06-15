@@ -139,6 +139,20 @@ contract NodeStorage is ExternalStorage, INodeStorage {
         return cidHash2canAddFileNodeAddresses[cidHash].length();
     }
 
+    function nodeCancelCanAddFile(address nodeAddress, string calldata cid) external {
+        mustManager(managerName);
+
+        bytes32 cidHash = keccak256(bytes(cid));
+        if (cidHash2canAddFileNodeAddresses[cidHash].contains(nodeAddress)) {
+            cidHash2canAddFileNodeAddresses[cidHash].remove(nodeAddress);
+            files[nodeAddress][cidHash] = 0;
+        }
+
+        if (nodes[nodeAddress].canAddFileCidHashes.contains(cidHash)) {
+            nodes[nodeAddress].canAddFileCidHashes.remove(cidHash);
+        }
+    }
+
     function getNodeCanAddFileCount(address nodeAddress) external view returns (uint256) {
         return nodes[nodeAddress].canAddFileCidHashes.length();
     }

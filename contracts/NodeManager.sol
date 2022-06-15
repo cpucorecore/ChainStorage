@@ -92,6 +92,16 @@ contract NodeManager is Importable, ExternalStorable, INodeManager {
         }
     }
 
+    function nodeCancelCanAddFile(address nodeAddress, string calldata cid) external {
+        mustAddress(CONTRACT_CHAIN_STORAGE);
+
+        require(_FileManager().exist(cid), "N:file not exist");
+        uint256 status = _FileManager().getStatus(cid);
+        require(FileTryAdd == status, "N:status must FileTryAdd");
+
+        _Storage().nodeCancelCanAddFile(nodeAddress, cid);
+    }
+
     function nodeAddFile(address nodeAddress, string calldata cid) external {
         mustAddress(CONTRACT_CHAIN_STORAGE);
 

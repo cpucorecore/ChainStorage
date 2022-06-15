@@ -12,6 +12,7 @@ interface IFileManager {
     function onEndDeleteFile(string calldata cid) external;
 
     function exist(string calldata cid) external view returns (bool);
+    function getStatus(string calldata cid) external view returns (uint256);
     function getSize(string calldata cid) external view returns (uint256);
     function getReplica(string calldata cid) external view returns (uint256);
 }

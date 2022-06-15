@@ -24,6 +24,7 @@ interface INodeStorage {
     function deleteFile(address nodeAddress, string calldata cid) external;
     
     function nodeCanAddFile(address nodeAddress, string calldata cid, uint256 size) external returns (uint256);
+    function nodeCancelCanAddFile(address nodeAddress, string calldata cid) external;
     function getNodeCanAddFileCount(address nodeAddress) external view returns (uint256);
     function getNodeCanAddFileCidHashes(address nodeAddress) external view returns (bytes32[] memory);
     function isSizeConsistent(string calldata cid) external view returns (bool);

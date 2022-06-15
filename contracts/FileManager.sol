@@ -144,6 +144,10 @@ contract FileManager is Importable, ExternalStorable, IFileManager {
         return _Storage().exist(cid);
     }
 
+    function getStatus(string calldata cid) external view returns (uint256) {
+        return _Storage().getStatus(cid);
+    }
+
     function getSize(string calldata cid) external view returns (uint256) {
         return _Storage().getSize(cid);
     }

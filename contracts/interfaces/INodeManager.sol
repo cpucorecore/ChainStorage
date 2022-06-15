@@ -8,6 +8,7 @@ interface INodeManager {
 
     function addFile(string calldata cid) external;
     function nodeCanAddFile(address nodeAddress, string calldata cid, uint256 size) external;
+    function nodeCancelCanAddFile(address nodeAddress, string calldata cid) external;
     function nodeAddFile(address nodeAddress, string calldata cid) external;
 
     function deleteFile(string calldata cid) external;

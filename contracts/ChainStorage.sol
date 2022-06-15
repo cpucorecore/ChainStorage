@@ -131,6 +131,11 @@ contract ChainStorage is Proxyable, Pausable, Importable {
         _NodeManager().nodeCanAddFile(msg.sender, cid, size);
     }
 
+    function nodeCancelCanAddFile(string calldata cid) external {
+        _mustOnline();
+        _NodeManager().nodeCancelCanAddFile(msg.sender, cid);
+    }
+
     function nodeAddFile(string calldata cid) external {
         _mustOnline();
         _NodeManager().nodeAddFile(msg.sender, cid);
